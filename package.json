@@ -1,0 +1,39 @@
+{
+  "name": "forum-test-automation",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.2.22",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "verify": "bun run typecheck && playwright test --list",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "playwright:test": "playwright test",
+    "playwright:test:ui": "playwright test --ui",
+    "playwright:test:headed": "playwright test --headed",
+    "playwright:test:smoke": "playwright test --project=guest",
+    "playwright:test:find": "playwright test tests/e2e/find",
+    "playwright:test:profile": "playwright test tests/e2e/profile",
+    "playwright:test:following": "playwright test tests/e2e/following",
+    "playwright:test:settings": "playwright test tests/e2e/settings",
+    "playwright:test:navigation": "playwright test tests/e2e/navigation",
+    "playwright:test:journey": "playwright test tests/e2e/journey",
+    "playwright:test:social": "playwright test tests/e2e/social",
+    "playwright:report": "playwright show-report",
+    "playwright:install": "playwright install chromium",
+    "codegen": "playwright codegen ${BASE_URL:-http://app.forum.test}"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^22.13.10",
+    "dotenv": "^16.4.7",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.20.0"
+  }
+}
