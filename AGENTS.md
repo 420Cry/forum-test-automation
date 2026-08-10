@@ -65,6 +65,6 @@ tests/
 Workflow: `.github/workflows/ci.yml` on every push/PR to `main`.
 
 - **verify:** lint, typecheck, `playwright test --list`
-- **forum-app PRs:** full e2e runs in [forum-app CI](../forum-app/.github/workflows/ci.yml) (checks out this repo at `main` alongside the PR app branch). Scenario pass/fail table: `bun run report:e2e-summary` (also invoked from `forum-app/.github/scripts/ci-e2e.sh`).
+- **forum-app PRs:** full e2e runs in [forum-app CI](../forum-app/.github/workflows/ci.yml). Prefer the **same branch name** as the app PR (e.g. `4FOR-56`); CI checks out that ref when it exists, otherwise `main`. Scenario pass/fail table: `bun run report:e2e-summary` (also invoked from `forum-app/.github/scripts/ci-e2e.sh`).
 
 See also [`tests/AGENTS.md`](tests/AGENTS.md).
