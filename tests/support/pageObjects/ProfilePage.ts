@@ -36,6 +36,7 @@ export class ProfilePage extends BasePage {
   }
 
   ownPreviewBanner() {
+    // Legacy banner copy was removed; keep helper for expectOtherProfile callers.
     return this.page.getByText(
       /this is your public profile|đây là hồ sơ công khai/i,
     )
@@ -54,12 +55,12 @@ export class ProfilePage extends BasePage {
   }
 
   async expectOwnProfile() {
-    await expect(this.ownPreviewBanner()).toBeVisible()
     await expect(this.editProfileButton()).toBeVisible()
     await expect(this.followButton()).toHaveCount(0)
   }
 
   async expectOtherProfile() {
-    await expect(this.ownPreviewBanner()).toHaveCount(0)
+    await expect(this.editProfileButton()).toHaveCount(0)
+    await expect(this.followButton()).toBeVisible()
   }
 }
