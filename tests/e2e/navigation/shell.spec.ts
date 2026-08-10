@@ -7,7 +7,7 @@ test.describe('App shell navigation', () => {
     appShellPage,
   }) => {
     await socialPage.goto()
-    await socialPage.expectLoaded()
+    await socialPage.expectSocialLoaded()
     await appShellPage.expectShellLoaded()
     await expect(appShellPage.languageGroup()).toBeVisible()
   })
@@ -44,7 +44,7 @@ test.describe('App shell navigation', () => {
     await test.step('Social', async () => {
       await appShellPage.navLink(/social/i).click()
       await expect(page).toHaveURL(/\/social/)
-      await socialPage.expectLoaded()
+      await socialPage.expectSocialLoaded()
     })
   })
 

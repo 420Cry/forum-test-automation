@@ -7,7 +7,6 @@ import { LoginPage } from '../pageObjects/LoginPage'
 import { ProfilePage } from '../pageObjects/ProfilePage'
 import { SettingsHubPage } from '../pageObjects/SettingsHubPage'
 import { SettingsProfilePage } from '../pageObjects/SettingsProfilePage'
-import { SocialPage } from '../pageObjects/SocialPage'
 
 type Pages = {
   loginPage: LoginPage
@@ -16,7 +15,7 @@ type Pages = {
   findPage: FindPage
   profilePage: ProfilePage
   followingPage: FollowingPage
-  socialPage: SocialPage
+  socialPage: AppShellPage
   settingsHubPage: SettingsHubPage
   settingsProfilePage: SettingsProfilePage
   appShellPage: AppShellPage
@@ -42,7 +41,7 @@ export const test = base.extend<Pages>({
     await use(new FollowingPage(page))
   },
   socialPage: async ({ page }, use) => {
-    await use(new SocialPage(page))
+    await use(new AppShellPage(page))
   },
   settingsHubPage: async ({ page }, use) => {
     await use(new SettingsHubPage(page))

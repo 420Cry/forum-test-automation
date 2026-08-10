@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { localePath } from '../../config/env'
+import { clickUntilReady } from '../helpers/retry'
 import { BasePage } from './BasePage'
 
 export class SettingsProfilePage extends BasePage {
@@ -67,11 +68,7 @@ export class SettingsProfilePage extends BasePage {
 
   async startEditing() {
     const save = this.saveButton()
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await this.editButton().click()
-      if (await save.isVisible()) break
-      await this.page.waitForTimeout(250)
-    }
+    await clickUntilReady(this.editButton(), () => save.isVisible())
     await expect(this.firstName()).toBeEditable()
     await expect(this.location()).toBeVisible()
     await expect(save).toBeVisible()

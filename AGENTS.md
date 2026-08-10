@@ -17,10 +17,12 @@ cp .env.local.example .env.local   # fill E2E_EMAIL / E2E_PASSWORD
 
 make verify                  # typecheck + test discovery
 # or via forum-server:
-#   forum test:verify
-#   forum test:smoke
-#   forum test
-#   forum lint:fix            # includes this repo
+#   forum test:unit          # api + app unit tests (no stack)
+#   forum test:verify        # e2e typecheck + discovery (no stack)
+#   forum test:smoke         # guest e2e only (stack required)
+#   forum test               # unit + full e2e (stack required for e2e)
+#   forum test:e2e           # full e2e only
+#   forum lint:fix
 bun run playwright:test:smoke
 bun run playwright:test      # guest smoke + authenticated suites
 bun run lint:fix

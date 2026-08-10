@@ -66,3 +66,11 @@ export function localePath(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`
   return `/${env.locale}${normalized}`
 }
+
+/** Post-login routes we expect after auth setup or smoke login. */
+export function authenticatedRoutePattern(includeOnboard = false): RegExp {
+  const routes = includeOnboard
+    ? '(social|onboard|find|following|settings|u/)'
+    : '(social|find|following|settings|u/)'
+  return new RegExp(`/${env.locale}/${routes}`)
+}

@@ -7,7 +7,7 @@ test.describe('Own profile', () => {
     profilePage,
     appShellPage,
   }) => {
-    await appShellPage.gotoSocial()
+    await appShellPage.goto()
     await appShellPage.openOwnProfileFromHeader()
     await expect(page).toHaveURL(/\/u\//)
     await profilePage.expectOwnProfile()
@@ -18,7 +18,7 @@ test.describe('Own profile', () => {
     profilePage,
     appShellPage,
   }) => {
-    await appShellPage.gotoSocial()
+    await appShellPage.goto()
     await appShellPage.openOwnProfileFromHeader()
     await profilePage.expectOwnProfile()
 

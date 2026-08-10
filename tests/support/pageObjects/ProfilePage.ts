@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { localePath } from '../../config/env'
+import { retryUntil } from '../helpers/retry'
 import { BasePage } from './BasePage'
 
 export class ProfilePage extends BasePage {
@@ -17,7 +18,7 @@ export class ProfilePage extends BasePage {
     const label = (await follow.textContent())?.trim() ?? ''
     if (/following|đang theo dõi/i.test(label)) return
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    const ok = await retryUntil(async () => {
       const followRequest = this.page.waitForResponse(
         (response) =>
           response.url().includes('/follows')
@@ -28,10 +29,10 @@ export class ProfilePage extends BasePage {
       await follow.click()
       await followRequest.catch(() => undefined)
       const nextLabel = (await follow.textContent())?.trim() ?? ''
-      if (/following|đang theo dõi/i.test(nextLabel)) return
-      await this.page.waitForTimeout(300)
-    }
-    await expect(follow).toHaveText(/following|đang theo dõi/i)
+      return /following|đang theo dõi/i.test(nextLabel)
+    })
+
+    if (!ok) await expect(follow).toHaveText(/following|đang theo dõi/i)
   }
 
   ownPreviewBanner() {

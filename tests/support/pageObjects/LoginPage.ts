@@ -50,18 +50,6 @@ export class LoginPage extends BasePage {
       .catch(() => undefined)
   }
 
-  private async fillStable(
-    locator: ReturnType<LoginPage['email']>,
-    value: string,
-  ) {
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      await locator.fill(value)
-      if ((await locator.inputValue()) === value) return
-      await this.page.waitForTimeout(300)
-    }
-    await expect(locator).toHaveValue(value)
-  }
-
   credentialsError() {
     return this.page.getByRole('alert').filter({
       hasText: /incorrect email or password|email hoặc mật khẩu không đúng/i,

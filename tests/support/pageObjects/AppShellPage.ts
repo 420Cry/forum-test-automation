@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { clickUntilReady } from '../helpers/retry'
 import { BasePage } from './BasePage'
 
 /** Left rail + header chrome on the protected home layout. */
@@ -31,18 +32,22 @@ export class AppShellPage extends BasePage {
     return this.nav().getByRole('link', { name })
   }
 
+  socialHeading() {
+    return this.page.getByRole('heading', { name: /social/i })
+  }
+
+  socialFeedSoonCopy() {
+    return this.page.getByText(/feed will live here|bảng tin sẽ xuất hiện/i)
+  }
+
   async openAccountMenu() {
     await this.ensureProfileCached()
     const settingsItem = this.page.getByRole('menuitem', {
       name: /settings|cài đặt/i,
     })
-    const toggle = this.accountMenuButton()
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await toggle.click()
-      if (await settingsItem.isVisible()) return
-      await this.page.waitForTimeout(250)
-    }
-    await expect(settingsItem).toBeVisible()
+    await clickUntilReady(this.accountMenuButton(), () =>
+      settingsItem.isVisible(),
+    )
   }
 
   async goToSettingsViaMenu() {
@@ -63,18 +68,20 @@ export class AppShellPage extends BasePage {
     await expect(this.navLink(/settings|cài đặt/i)).toBeVisible()
   }
 
-  async gotoSocial() {
+  async goto() {
     await this.ensureProfileCached()
+  }
+
+  async expectSocialLoaded() {
+    await expect(this.socialHeading()).toBeVisible()
+    await expect(this.socialFeedSoonCopy()).toBeVisible()
   }
 
   async openOwnProfileFromHeader() {
     await this.ensureProfileCached()
-    const avatar = this.profileAvatarButton()
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      await avatar.click()
-      if (this.page.url().includes('/u/')) return
-      await this.page.waitForTimeout(300)
-    }
+    await clickUntilReady(this.profileAvatarButton(), async () =>
+      this.page.url().includes('/u/'),
+    )
     await expect(this.page).toHaveURL(/\/u\//)
   }
 }

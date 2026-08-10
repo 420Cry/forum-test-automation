@@ -5,6 +5,6 @@ test.describe('Social feed', () => {
     socialPage,
   }) => {
     await socialPage.goto()
-    await socialPage.expectLoaded()
+    await socialPage.expectSocialLoaded()
   })
 })

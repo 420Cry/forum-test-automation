@@ -1,9 +1,10 @@
 import { expect } from '@playwright/test'
+import { clickUntilReady } from '../helpers/retry'
 import { BasePage } from './BasePage'
 
 export class FindPage extends BasePage {
   async goto() {
-    await this.openFindViaNav()
+    await this.ensureOnFindPage()
     await this.expectLoaded()
   }
 
@@ -15,7 +16,6 @@ export class FindPage extends BasePage {
       return
     }
     await this.openFindViaNav()
-    await this.expectLoaded()
   }
 
   heading() {
@@ -47,28 +47,36 @@ export class FindPage extends BasePage {
   }
 
   async openFilters() {
-    await this.clickUntilVisible(/^filters$|^bộ lọc$/i, this.drawer())
+    await this.clickDrawerTrigger(/^filters$|^bộ lọc$/i)
   }
 
   async openSort() {
-    await this.clickUntilVisible(/sort|sắp xếp/i, this.drawer())
+    await this.clickDrawerTrigger(/sort|sắp xếp/i)
   }
 
-  private async clickUntilVisible(
-    buttonName: RegExp,
-    target: ReturnType<FindPage['drawer']>,
-  ) {
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      if (!this.page.url().includes('/find')) {
-        await this.goto()
-      }
-      const trigger = this.page.getByRole('button', { name: buttonName })
-      await expect(trigger).toBeVisible({ timeout: 10_000 })
-      await trigger.click({ timeout: 10_000 })
-      if (await target.isVisible()) return
-      await this.page.waitForTimeout(300)
+  private async clickDrawerTrigger(buttonName: RegExp) {
+    await this.ensureOnFindPage()
+    await this.expectLoaded()
+
+    const drawer = this.drawer()
+    const trigger = this.page.getByRole('button', { name: buttonName })
+    await expect(trigger).toBeVisible({ timeout: 10_000 })
+
+    const ok = await clickUntilReady(
+      trigger,
+      () => drawer.isVisible(),
+      { attempts: 8, delayMs: 300 },
+    )
+    if (!ok) {
+      await this.openFindViaNav()
+      await this.expectLoaded()
+      await clickUntilReady(
+        this.page.getByRole('button', { name: buttonName }),
+        () => drawer.isVisible(),
+        { attempts: 8, delayMs: 300 },
+      )
     }
-    await expect(target).toBeVisible({ timeout: 15_000 })
+    await expect(drawer).toBeVisible({ timeout: 15_000 })
   }
 
   async selectType(label: RegExp) {
