@@ -68,13 +68,28 @@ export class ProfilePage extends BasePage {
 
   async expectUserFollowStats() {
     await expect(
-      this.page.getByRole('link', {
+      this.page.getByRole('button', {
         name: /\d+\s*(followers|người theo dõi)/i,
       }),
     ).toBeVisible()
     await expect(
-      this.page.getByRole('link', {
+      this.page.getByRole('button', {
         name: /\d+\s*(following|đang theo dõi)/i,
+      }),
+    ).toBeVisible()
+  }
+
+  followersStatButton() {
+    return this.page.getByRole('button', {
+      name: /\d+\s*(followers|người theo dõi)/i,
+    })
+  }
+
+  async openFollowersSheet() {
+    await this.followersStatButton().click()
+    await expect(
+      this.page.getByRole('dialog', {
+        name: /followers|người theo dõi/i,
       }),
     ).toBeVisible()
   }

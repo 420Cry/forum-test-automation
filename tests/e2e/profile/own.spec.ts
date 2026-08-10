@@ -25,6 +25,16 @@ test.describe('Own profile', () => {
     await profilePage.editProfileButton().click()
     await expect(page).toHaveURL(/\/settings\/profile/)
   })
+
+  test('PROF04 Followers opens list sheet', async ({
+    profilePage,
+    appShellPage,
+  }) => {
+    await appShellPage.goto()
+    await appShellPage.openOwnProfileFromHeader()
+    await profilePage.expectOwnProfile()
+    await profilePage.openFollowersSheet()
+  })
 })
 
 test.describe('Peer profile', () => {

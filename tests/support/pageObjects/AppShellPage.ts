@@ -25,7 +25,14 @@ export class AppShellPage extends BasePage {
   }
 
   nav() {
-    return this.page.getByRole('navigation')
+    // Prefer desktop left-rail; fall back to mobile bottom bar when rail is hidden.
+    const main = this.page.getByRole('navigation', {
+      name: /main|chính/i,
+    })
+    const mobile = this.page.getByRole('navigation', {
+      name: /mobile|di động/i,
+    })
+    return main.or(mobile)
   }
 
   navLink(name: RegExp) {
