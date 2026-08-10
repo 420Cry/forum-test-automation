@@ -113,6 +113,19 @@ export class BasePage {
     }
   }
 
+  /** Fill a Vue-controlled input until the value sticks. */
+  protected async fillStable(
+    input: ReturnType<Page['locator']>,
+    value: string,
+  ) {
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      await input.fill(value)
+      if ((await input.inputValue()) === value) return
+      await this.page.waitForTimeout(200)
+    }
+    await expect(input).toHaveValue(value)
+  }
+
   /** Wait until Vue owns an input (fill survives a short delay). */
   protected async waitForInputHydration(input: ReturnType<Page['locator']>) {
     const probe = `probe-${Date.now()}@example.com`

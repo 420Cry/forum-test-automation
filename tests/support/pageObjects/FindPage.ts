@@ -77,8 +77,7 @@ export class FindPage extends BasePage {
 
   async search(query: string) {
     await this.ensureOnFindPage()
-    await this.waitForInputHydration(this.searchInput())
-    await this.searchInput().fill(query)
+    await this.fillStable(this.searchInput(), query)
     await this.searchButton().click()
   }
 
