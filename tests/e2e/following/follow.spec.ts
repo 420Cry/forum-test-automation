@@ -12,29 +12,17 @@ test.describe('Follow', () => {
     followingPage,
   }) => {
     const peerKey = env.peerUrlKey()
-    test.skip(!peerKey, 'Set E2E_PEER_URL_KEY for follow flow')
+    expect(peerKey, 'E2E_PEER_URL_KEY is required for follow flow').toBeTruthy()
 
     await profilePage.goto(peerKey)
     await profilePage.expectOtherProfile()
-
-    const follow = profilePage.followButton()
-    await expect(follow).toBeVisible()
-
-    const label = (await follow.textContent())?.trim() ?? ''
-    const isFollowing = /following|đang theo dõi/i.test(label)
-
-    if (!isFollowing) {
-      await follow.click()
-      await expect(profilePage.followButton()).toHaveText(
-        /following|đang theo dõi/i,
-      )
-    }
+    await profilePage.followPeer()
 
     await followingPage.goto()
     await followingPage.expectLoaded()
-    await expect(followingPage.cards().first()).toBeVisible({
-      timeout: 15_000,
-    })
+    await expect
+      .poll(async () => followingPage.cards().count(), { timeout: 15_000 })
+      .toBeGreaterThan(0)
 
     const card = followingPage
       .cards()

@@ -11,11 +11,13 @@ With the stack up (`forum dev`):
 ```bash
 forum install:clone    # includes this repo
 forum repo:setup       # bun install + Playwright Chromium + .env.local
-# fill E2E_EMAIL / E2E_PASSWORD in .env.local
+forum db:migrate       # required — auth.setup provisions onboarded users via API
 forum test:verify
 forum test:smoke
 forum test
 ```
+
+Local defaults (`test@test.com` / `test2@test.com`) are in `.env.example`. `auth.setup` creates confirmed Supabase users and completes onboarding through `POST /user/onboarding` before authenticated specs run.
 
 ## Setup (standalone)
 

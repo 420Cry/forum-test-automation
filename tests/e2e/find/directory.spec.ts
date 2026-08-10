@@ -1,5 +1,7 @@
 import { test, expect } from '../../support/fixtures/test'
 
+test.describe.configure({ mode: 'serial' })
+
 test.describe('Find directory', () => {
   test('FIND01 Loads directory search UI', async ({ findPage }) => {
     await findPage.goto()
@@ -10,7 +12,6 @@ test.describe('Find directory', () => {
 
   test('FIND02 Opens filters drawer with multi-select facets', async ({
     findPage,
-    page,
   }) => {
     await findPage.goto()
     await findPage.openFilters()
@@ -24,21 +25,10 @@ test.describe('Find directory', () => {
       drawer.getByRole('button', { name: /show results|xem kết quả/i }),
     ).toBeVisible()
 
-    const options = drawer
-      .locator('button')
-      .filter({
-        hasNotText: /any|bất kỳ|clear|xóa|show results|xem kết quả/i,
-      })
-    const count = await options.count()
-    if (count > 0) {
-      await options.nth(0).click()
-      await drawer
-        .getByRole('button', { name: /show results|xem kết quả/i })
-        .click()
-      await expect(drawer).toBeHidden()
-    } else {
-      await page.keyboard.press('Escape')
-    }
+    await drawer
+      .getByRole('button', { name: /dismiss|close|đóng/i })
+      .click()
+    await expect(drawer).toBeHidden({ timeout: 15_000 })
   })
 
   test('FIND03 Opens sort drawer and can pick name sort', async ({

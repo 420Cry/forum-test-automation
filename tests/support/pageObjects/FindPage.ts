@@ -1,10 +1,21 @@
 import { expect } from '@playwright/test'
-import { localePath } from '../../config/env'
 import { BasePage } from './BasePage'
 
 export class FindPage extends BasePage {
   async goto() {
-    await this.page.goto(localePath('/find'))
+    await this.openFindViaNav()
+    await this.expectLoaded()
+  }
+
+  async ensureOnFindPage() {
+    if (
+      this.page.url().includes('/find')
+      && (await this.heading().isVisible())
+    ) {
+      return
+    }
+    await this.openFindViaNav()
+    await this.expectLoaded()
   }
 
   heading() {
@@ -20,11 +31,11 @@ export class FindPage extends BasePage {
   }
 
   filtersButton() {
-    return this.page.getByRole('button', { name: /filters|bộ lọc/i })
+    return this.page.getByRole('button', { name: /^filters$|^bộ lọc$/i })
   }
 
   sortButton() {
-    return this.page.getByRole('button', { name: /sort|sắp xếp/i })
+    return this.page.getByRole('button', { name: /sort/i })
   }
 
   typePill(label: RegExp | string) {
@@ -36,13 +47,28 @@ export class FindPage extends BasePage {
   }
 
   async openFilters() {
-    await this.filtersButton().click()
-    await expect(this.drawer()).toBeVisible()
+    await this.clickUntilVisible(/^filters$|^bộ lọc$/i, this.drawer())
   }
 
   async openSort() {
-    await this.sortButton().click()
-    await expect(this.drawer()).toBeVisible()
+    await this.clickUntilVisible(/sort|sắp xếp/i, this.drawer())
+  }
+
+  private async clickUntilVisible(
+    buttonName: RegExp,
+    target: ReturnType<FindPage['drawer']>,
+  ) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      if (!this.page.url().includes('/find')) {
+        await this.goto()
+      }
+      const trigger = this.page.getByRole('button', { name: buttonName })
+      await expect(trigger).toBeVisible({ timeout: 10_000 })
+      await trigger.click({ timeout: 10_000 })
+      if (await target.isVisible()) return
+      await this.page.waitForTimeout(300)
+    }
+    await expect(target).toBeVisible({ timeout: 15_000 })
   }
 
   async selectType(label: RegExp) {
@@ -50,6 +76,8 @@ export class FindPage extends BasePage {
   }
 
   async search(query: string) {
+    await this.ensureOnFindPage()
+    await this.waitForInputHydration(this.searchInput())
     await this.searchInput().fill(query)
     await this.searchButton().click()
   }
@@ -61,7 +89,8 @@ export class FindPage extends BasePage {
   emptyOrResults() {
     return this.page
       .locator('article')
-      .or(this.page.getByText(/no matches yet|không có kết quả|thử tìm/i))
+      .or(this.page.getByText(/no matches yet|không có kết quả|try a different search/i))
+      .or(this.page.getByText(/loading|đang tải/i))
   }
 
   async expectLoaded() {

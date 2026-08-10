@@ -4,7 +4,9 @@ import { BasePage } from './BasePage'
 
 export class FollowingPage extends BasePage {
   async goto() {
-    await this.page.goto(localePath('/following'))
+    await this.page.goto(localePath('/following'), {
+      waitUntil: 'domcontentloaded',
+    })
   }
 
   heading() {
@@ -23,5 +25,8 @@ export class FollowingPage extends BasePage {
 
   async expectLoaded() {
     await expect(this.heading()).toBeVisible()
+    await expect(this.page.getByText(/loading|đang tải/i)).toHaveCount(0, {
+      timeout: 15_000,
+    })
   }
 }

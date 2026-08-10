@@ -14,11 +14,6 @@ test.describe('Authenticated journey', () => {
     settingsProfilePage,
     appShellPage,
   }) => {
-    test.skip(
-      !process.env.E2E_EMAIL?.trim() || !process.env.E2E_PASSWORD?.trim(),
-      'Set E2E credentials',
-    )
-
     await test.step('Land on social shell', async () => {
       await socialPage.goto()
       await socialPage.expectLoaded()
@@ -35,7 +30,7 @@ test.describe('Authenticated journey', () => {
     })
 
     await test.step('Open own public profile from header', async () => {
-      await appShellPage.profileAvatarButton().click()
+      await appShellPage.openOwnProfileFromHeader()
       await expect(page).toHaveURL(/\/u\//)
       await profilePage.expectOwnProfile()
     })
@@ -57,7 +52,7 @@ test.describe('Authenticated journey', () => {
     page,
   }) => {
     const peerKey = env.peerUrlKey()
-    test.skip(!peerKey, 'Set E2E_PEER_URL_KEY for peer journey')
+    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer journey').toBeTruthy()
 
     await test.step('Open peer profile', async () => {
       await profilePage.goto(peerKey)
@@ -65,23 +60,20 @@ test.describe('Authenticated journey', () => {
     })
 
     await test.step('Follow from profile', async () => {
-      const follow = profilePage.followButton()
-      await expect(follow).toBeVisible()
-      const label = (await follow.textContent())?.trim() ?? ''
-      if (!/following|đang theo dõi/i.test(label)) {
-        await follow.click()
-        await expect(profilePage.followButton()).toHaveText(
-          /following|đang theo dõi/i,
-        )
-      }
+      await profilePage.followPeer()
     })
 
     await test.step('Peer appears on Following', async () => {
-      await followingPage.goto()
-      await followingPage.expectLoaded()
-      await expect(followingPage.cards().first()).toBeVisible({
-        timeout: 15_000,
-      })
+      await expect
+        .poll(
+          async () => {
+            await followingPage.goto()
+            await followingPage.expectLoaded()
+            return followingPage.cards().count()
+          },
+          { timeout: 20_000 },
+        )
+        .toBeGreaterThan(0)
     })
 
     await test.step('Directory still loads after follow', async () => {

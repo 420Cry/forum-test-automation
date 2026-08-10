@@ -35,7 +35,8 @@ test.describe('Smoke — auth UI', () => {
     await loginPage.forgotPasswordLink().click()
     await expect(page).toHaveURL(/\/auth\/forgot-password/)
 
-    await page.goto(localePath('/auth/login'))
+    await loginPage.goto()
+    await loginPage.expectLoaded()
     await loginPage.createAccountLink().click()
     await expect(page).toHaveURL(/\/auth\/register/)
   })

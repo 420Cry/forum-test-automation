@@ -4,7 +4,12 @@ import { BasePage } from './BasePage'
 
 export class SettingsProfilePage extends BasePage {
   async goto() {
-    await this.page.goto(localePath('/settings/profile'))
+    await this.ensureProfileCached()
+    await this.page.goto(localePath('/settings/profile'), {
+      waitUntil: 'domcontentloaded',
+    })
+    await expect(this.editButton()).toBeVisible()
+    await expect(this.firstName()).toHaveValue(/.+/, { timeout: 15_000 })
   }
 
   heading() {
@@ -61,10 +66,15 @@ export class SettingsProfilePage extends BasePage {
   }
 
   async startEditing() {
-    await this.editButton().click()
+    const save = this.saveButton()
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await this.editButton().click()
+      if (await save.isVisible()) break
+      await this.page.waitForTimeout(250)
+    }
     await expect(this.firstName()).toBeEditable()
     await expect(this.location()).toBeVisible()
-    await expect(this.saveButton()).toBeVisible()
+    await expect(save).toBeVisible()
   }
 
   async searchLocation(query: string) {

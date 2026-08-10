@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import { localePath } from '../../config/env'
 import { BasePage } from './BasePage'
 
 /** Left rail + header chrome on the protected home layout. */
@@ -33,8 +32,17 @@ export class AppShellPage extends BasePage {
   }
 
   async openAccountMenu() {
-    await this.accountMenuButton().click()
-    await expect(this.page.getByRole('menu')).toBeVisible()
+    await this.ensureProfileCached()
+    const settingsItem = this.page.getByRole('menuitem', {
+      name: /settings|cài đặt/i,
+    })
+    const toggle = this.accountMenuButton()
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await toggle.click()
+      if (await settingsItem.isVisible()) return
+      await this.page.waitForTimeout(250)
+    }
+    await expect(settingsItem).toBeVisible()
   }
 
   async goToSettingsViaMenu() {
@@ -56,6 +64,17 @@ export class AppShellPage extends BasePage {
   }
 
   async gotoSocial() {
-    await this.page.goto(localePath('/social'))
+    await this.ensureProfileCached()
+  }
+
+  async openOwnProfileFromHeader() {
+    await this.ensureProfileCached()
+    const avatar = this.profileAvatarButton()
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await avatar.click()
+      if (this.page.url().includes('/u/')) return
+      await this.page.waitForTimeout(300)
+    }
+    await expect(this.page).toHaveURL(/\/u\//)
   }
 }

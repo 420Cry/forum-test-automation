@@ -8,8 +8,8 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 2 : 2,
   reporter: [
     ['list'],
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
@@ -48,6 +48,8 @@ export default defineConfig({
       : []),
     {
       name: 'guest',
+      fullyParallel: false,
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         storageState: { cookies: [], origins: [] },

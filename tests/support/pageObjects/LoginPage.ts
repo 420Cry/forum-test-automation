@@ -7,6 +7,7 @@ export class LoginPage extends BasePage {
     await this.page.goto(localePath('/auth/login'), {
       waitUntil: 'domcontentloaded',
     })
+    await this.waitForInputHydration(this.email())
   }
 
   email() {
@@ -24,15 +25,47 @@ export class LoginPage extends BasePage {
   async login(email: string, password: string) {
     await this.goto()
     await this.expectLoaded()
-    await this.email().fill(email)
-    await this.password().fill(password)
+    await this.fillStable(this.email(), email)
+    await this.fillStable(this.password(), password)
+    await this.submitLogin()
+
+    if (
+      this.page.url().includes('/auth/login')
+      && !(await this.credentialsError().isVisible())
+    ) {
+      await this.fillStable(this.email(), email)
+      await this.fillStable(this.password(), password)
+      await this.submitLogin()
+    }
+  }
+
+  private async submitLogin() {
+    if (!this.page.url().includes('/auth/login')) return
+
     await this.submit().click()
+    await this.page
+      .waitForURL((url) => !url.pathname.includes('/auth/login'), {
+        timeout: 15_000,
+      })
+      .catch(() => undefined)
+  }
+
+  private async fillStable(
+    locator: ReturnType<LoginPage['email']>,
+    value: string,
+  ) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await locator.fill(value)
+      if ((await locator.inputValue()) === value) return
+      await this.page.waitForTimeout(300)
+    }
+    await expect(locator).toHaveValue(value)
   }
 
   credentialsError() {
-    return this.page.getByText(
-      /incorrect email or password|email hoặc mật khẩu không đúng/i,
-    )
+    return this.page.getByRole('alert').filter({
+      hasText: /incorrect email or password|email hoặc mật khẩu không đúng/i,
+    })
   }
 
   createAccountLink() {
