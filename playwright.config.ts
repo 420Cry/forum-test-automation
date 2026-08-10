@@ -25,9 +25,9 @@ export default defineConfig({
     video: process.env.PW_VIDEO === '1' ? 'retain-on-failure' : 'off',
     navigationTimeout: 30_000,
     actionTimeout: 15_000,
-    extraHTTPHeaders: {
-      'X-Forum-E2E': '1',
-    },
+    // Do not set custom extraHTTPHeaders here: Playwright applies them to
+    // cross-origin API calls too, and unknown headers fail browser CORS
+    // (net::ERR_FAILED on /auth/me → stuck on /onboard after login).
   },
   projects: [
     ...(hasAuth
