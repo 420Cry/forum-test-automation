@@ -57,10 +57,25 @@ export class ProfilePage extends BasePage {
   async expectOwnProfile() {
     await expect(this.editProfileButton()).toBeVisible()
     await expect(this.followButton()).toHaveCount(0)
+    await this.expectUserFollowStats()
   }
 
   async expectOtherProfile() {
     await expect(this.editProfileButton()).toHaveCount(0)
     await expect(this.followButton()).toBeVisible()
+    await this.expectUserFollowStats()
+  }
+
+  async expectUserFollowStats() {
+    await expect(
+      this.page.getByRole('link', {
+        name: /\d+\s*(followers|người theo dõi)/i,
+      }),
+    ).toBeVisible()
+    await expect(
+      this.page.getByRole('link', {
+        name: /\d+\s*(following|đang theo dõi)/i,
+      }),
+    ).toBeVisible()
   }
 }
