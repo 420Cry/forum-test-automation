@@ -1,6 +1,8 @@
 import { test, expect } from '../../support/fixtures/test'
 import { localePath } from '../../config/env'
 
+test.describe.configure({ mode: 'serial' })
+
 test.describe('App shell navigation', () => {
   test('NAV01 Header and left-rail nav render on social', async ({
     socialPage,
@@ -36,8 +38,7 @@ test.describe('App shell navigation', () => {
     })
 
     await test.step('Settings', async () => {
-      await appShellPage.navLink(/settings|cài đặt/i).click()
-      await expect(page).toHaveURL(/\/settings/)
+      await appShellPage.goToSettingsViaNav()
       await settingsHubPage.expectLoaded()
     })
 

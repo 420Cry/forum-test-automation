@@ -1,16 +1,13 @@
 import { test as setup, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { authenticatedRoutePattern, env, hasE2EAuthCredentials } from './config/env'
+import { authStoragePath } from './config/paths'
 import { apiUnavailableMessage, waitForApiReady } from './support/helpers/e2eApi'
 import { ensureE2EUser } from './support/helpers/ensureE2EUser'
 import { LoginPage } from './support/pageObjects/LoginPage'
 
-const authFile = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../playwright/.auth/user.json',
-)
+const authFile = authStoragePath
 
 setup('authenticate', async ({ page }) => {
   if (!hasE2EAuthCredentials()) {
@@ -42,15 +39,17 @@ setup('authenticate', async ({ page }) => {
 
   await expect(page).not.toHaveURL(/\/auth\/login/)
 
-  if (page.url().includes('/onboard')) {
+  // Profile hydrate can briefly route via /onboard before redirecting to /social.
+  try {
+    await expect(page).toHaveURL(authenticatedRoutePattern(), { timeout: 20_000 })
+  }
+  catch {
     throw new Error(
       apiReady
-        ? 'E2E user reached onboarding. Run forum db:migrate && forum db:seed, then re-run tests.'
+        ? `E2E user stayed on ${page.url()} after login (expected social/find/…). Run forum db:migrate && forum db:seed, then re-run tests.`
         : apiUnavailableMessage(),
     )
   }
-
-  await expect(page).toHaveURL(authenticatedRoutePattern())
 
   fs.mkdirSync(path.dirname(authFile), { recursive: true })
   await page.context().storageState({ path: authFile })

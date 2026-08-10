@@ -24,8 +24,8 @@ type OnboardingBody = {
 const SHARED = {
   firstName: 'Test',
   dateOfBirth: '1990-01-15',
-  location: 'austin-us',
-  locationName: 'Austin',
+  location: 'city_us_tx_austin',
+  locationName: 'Austin, United States',
   occupation: 'founder',
   occupationName: 'Founder',
 } as const
@@ -113,6 +113,12 @@ export async function ensureE2EUser(
 
   if (!me?.profile?.onboarded) {
     await completeOnboarding(token, ONBOARDING[kind])
+    const after = await fetchMe(token)
+    if (!after?.profile?.onboarded) {
+      throw new Error(
+        `E2E user ${email} still not onboarded after POST /user/onboarding.`,
+      )
+    }
   }
 
   const desiredUrlKey

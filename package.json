@@ -23,6 +23,7 @@
     "playwright:test:journey": "playwright test tests/e2e/journey",
     "playwright:test:social": "playwright test tests/e2e/social",
     "playwright:report": "playwright show-report",
+    "report:e2e-summary": "node scripts/report-e2e-summary.mjs",
     "playwright:install": "playwright install chromium",
     "codegen": "playwright codegen ${BASE_URL:-http://app.forum.test}"
   },

@@ -40,6 +40,12 @@ export class AppShellPage extends BasePage {
     return this.page.getByText(/feed will live here|bảng tin sẽ xuất hiện/i)
   }
 
+  async goToSettingsViaNav() {
+    await clickUntilReady(this.navLink(/settings|cài đặt/i), async () =>
+      /\/settings/.test(this.page.url()),
+    )
+  }
+
   async openAccountMenu() {
     await this.ensureProfileCached()
     const settingsItem = this.page.getByRole('menuitem', {
