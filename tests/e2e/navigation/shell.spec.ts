@@ -60,4 +60,23 @@ test.describe('App shell navigation', () => {
     await settingsHubPage.expectLoaded()
     await expect(page).toHaveURL(new RegExp(`${localePath('/settings')}$`))
   })
+
+  test('NAV04 Mobile bottom nav is visible below lg', async ({
+    page,
+    socialPage,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await socialPage.goto()
+    await socialPage.expectSocialLoaded()
+
+    const mobileNav = page.getByRole('navigation', {
+      name: /mobile|di động/i,
+    })
+    await expect(mobileNav).toBeVisible()
+    await expect(mobileNav.getByRole('link', { name: /social/i })).toBeVisible()
+    await expect(mobileNav.getByRole('link', { name: /find|tìm/i })).toBeVisible()
+
+    await mobileNav.getByRole('link', { name: /find|tìm/i }).click()
+    await expect(page).toHaveURL(/\/find/)
+  })
 })

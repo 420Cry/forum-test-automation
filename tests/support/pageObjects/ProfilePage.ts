@@ -15,6 +15,8 @@ export class ProfilePage extends BasePage {
   async followPeer() {
     const follow = this.followButton()
     await expect(follow).toBeVisible()
+    // Wait until follow status has loaded (button disabled while !ready).
+    await expect(follow).toBeEnabled({ timeout: 15_000 })
     const label = (await follow.textContent())?.trim() ?? ''
     if (/following|đang theo dõi/i.test(label)) return
 
@@ -36,6 +38,7 @@ export class ProfilePage extends BasePage {
   }
 
   ownPreviewBanner() {
+    // Legacy banner copy was removed; keep helper for expectOtherProfile callers.
     return this.page.getByText(
       /this is your public profile|đây là hồ sơ công khai/i,
     )
@@ -48,18 +51,76 @@ export class ProfilePage extends BasePage {
   }
 
   followButton() {
+    // Exact CTA labels only — do not match header stats like "3 following".
     return this.page.getByRole('button', {
-      name: /\+?\s*follow|theo dõi|following|đang theo dõi/i,
+      name: /^(?:\+ ?)?(?:follow|following|unfollow|sign in to follow|theo dõi|đang theo dõi|đăng nhập để theo dõi)$/i,
     })
   }
 
   async expectOwnProfile() {
-    await expect(this.ownPreviewBanner()).toBeVisible()
     await expect(this.editProfileButton()).toBeVisible()
     await expect(this.followButton()).toHaveCount(0)
+    await this.expectUserFollowStats()
   }
 
   async expectOtherProfile() {
-    await expect(this.ownPreviewBanner()).toHaveCount(0)
+    await expect(this.editProfileButton()).toHaveCount(0)
+    await expect(this.followButton()).toBeVisible()
+    await this.expectUserFollowStats()
+  }
+
+  async expectUserFollowStats() {
+    await expect(
+      this.page.getByRole('button', {
+        name: /\d+\s*(followers|người theo dõi)/i,
+      }),
+    ).toBeVisible()
+    await expect(
+      this.page.getByRole('button', {
+        name: /\d+\s*(following|đang theo dõi)/i,
+      }),
+    ).toBeVisible()
+  }
+
+  followersStatButton() {
+    return this.page.getByRole('button', {
+      name: /\d+\s*(followers|người theo dõi)/i,
+    })
+  }
+
+  followingStatButton() {
+    return this.page.getByRole('button', {
+      name: /\d+\s*(following|đang theo dõi)/i,
+    })
+  }
+
+  async followingCount(): Promise<number> {
+    const text = (await this.followingStatButton().textContent()) ?? ''
+    const match = text.match(/(\d+)/)
+    return match ? Number(match[1]) : NaN
+  }
+
+  async openFollowersSheet() {
+    await this.followersStatButton().click()
+    await expect(
+      this.page.getByRole('dialog', {
+        name: /followers|người theo dõi/i,
+      }),
+    ).toBeVisible()
+  }
+
+  async openFollowingSheet() {
+    await this.followingStatButton().click()
+    await expect(
+      this.page.getByRole('dialog', {
+        name: /following|đang theo dõi/i,
+      }),
+    ).toBeVisible()
+  }
+
+  async closeFollowSheet() {
+    const dialog = this.page.getByRole('dialog').first()
+    await dialog.getByRole('button', { name: /dismiss|đóng/i }).click()
+    await expect(dialog).toHaveCount(0)
   }
 }

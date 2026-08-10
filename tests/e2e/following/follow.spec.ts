@@ -35,4 +35,17 @@ test.describe('Follow', () => {
       .click()
     await expect(target).toHaveCount(0)
   })
+
+  test('FLW03 Following cards do not show raw city keys', async ({
+    followingPage,
+  }) => {
+    await followingPage.goto()
+    await followingPage.expectLoaded()
+
+    const count = await followingPage.cards().count()
+    test.skip(count === 0, 'No following cards to assert location labels')
+
+    const text = await followingPage.cards().first().innerText()
+    expect(text).not.toMatch(/city_[a-z0-9_]+/i)
+  })
 })
