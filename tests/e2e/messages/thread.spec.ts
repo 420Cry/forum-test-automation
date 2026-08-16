@@ -88,19 +88,23 @@ test.describe('Messages thread', () => {
 
     await messagesPage.profileMessageButton().click()
 
-    // One-way follow from peer still allows DMs — skip if channel opens.
-    const opened = await page
-      .waitForURL(/channelUrl=/, { timeout: 8_000 })
-      .then(() => true)
-      .catch(() => false)
+    // Toast lasts ~3s — race it against navigation (do not wait for URL first).
+    const result = await Promise.race([
+      messagesPage
+        .notConnectedToast()
+        .waitFor({ state: 'visible', timeout: 10_000 })
+        .then(() => 'toast' as const),
+      page
+        .waitForURL(/channelUrl=/, { timeout: 10_000 })
+        .then(() => 'opened' as const),
+    ])
+
     test.skip(
-      opened,
+      result === 'opened',
       'Peer still follows primary (DM allowed either direction)',
     )
 
-    await expect(messagesPage.notConnectedToast()).toBeVisible({
-      timeout: 15_000,
-    })
+    await expect(messagesPage.notConnectedToast()).toBeVisible()
     await expect(page).not.toHaveURL(/channelUrl=/)
   })
 })

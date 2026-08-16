@@ -27,9 +27,9 @@ export class MessagesPage extends BasePage {
   }
 
   notConnectedToast() {
-    return this.page.getByText(
-      /follow each other first|hãy theo dõi nhau trước/i,
-    )
+    return this.page.getByRole('alert').filter({
+      hasText: /follow each other first|hãy theo dõi nhau trước/i,
+    })
   }
 
   heading() {
@@ -61,15 +61,11 @@ export class MessagesPage extends BasePage {
   }
 
   reactionTrigger() {
-    return this.page.getByRole('button', {
-      name: /add reaction|thêm cảm xúc/i,
-    })
+    return this.page.getByTestId('chat-reaction-trigger')
   }
 
   reactionPicker() {
-    return this.page.getByRole('listbox', {
-      name: /choose a reaction|chọn cảm xúc/i,
-    })
+    return this.page.getByTestId('chat-reaction-picker')
   }
 
   deliveryStatus() {
@@ -156,10 +152,17 @@ export class MessagesPage extends BasePage {
   }
 
   async openReactionPickerOnLastOutgoing(text: string) {
-    const bubble = this.page.getByText(text, { exact: true }).last()
-    await bubble.hover()
-    await this.reactionTrigger().last().click()
-    await expect(this.reactionPicker()).toBeVisible()
+    const row = this.page
+      .locator('.group\\/msg')
+      .filter({ has: this.page.getByText(text, { exact: true }) })
+      .last()
+    await expect(row).toBeVisible()
+    await row.scrollIntoViewIfNeeded()
+    await row.hover()
+    const trigger = row.getByTestId('chat-reaction-trigger')
+    await expect(trigger).toBeVisible()
+    await trigger.click()
+    await expect(this.reactionPicker()).toBeVisible({ timeout: 10_000 })
   }
 
   async pickReaction(emoji: string) {
