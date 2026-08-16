@@ -152,23 +152,37 @@ export class MessagesPage extends BasePage {
   }
 
   async openReactionPickerOnLastOutgoing(text: string) {
+    // Message rows remount when Sendbird updates delivery/reactions — retry.
+    await expect(async () => {
+      const row = this.page
+        .locator('.group\\/msg')
+        .filter({ has: this.page.getByText(text, { exact: true }) })
+        .last()
+      await expect(row).toBeVisible()
+      await row.hover({ force: true })
+      await row.getByTestId('chat-reaction-trigger').click({ force: true })
+      await expect(this.reactionPicker()).toBeVisible({ timeout: 3_000 })
+    }).toPass({ timeout: 20_000 })
+  }
+
+  async pickReaction(emoji: string) {
+    const picker = this.reactionPicker()
+    await picker.getByRole('option', { name: new RegExp(emoji) }).click()
+    await expect(picker).toBeHidden({ timeout: 10_000 })
+  }
+
+  /** Reaction chips use role=listitem (aria: "{emoji}, {count}"). */
+  reactionChip(emoji: string) {
+    return this.page.getByRole('listitem', { name: new RegExp(emoji) })
+  }
+
+  async expectReactionOnMessage(text: string, emoji: string) {
     const row = this.page
       .locator('.group\\/msg')
       .filter({ has: this.page.getByText(text, { exact: true }) })
       .last()
-    await expect(row).toBeVisible()
-    await row.scrollIntoViewIfNeeded()
-    await row.hover()
-    const trigger = row.getByTestId('chat-reaction-trigger')
-    await expect(trigger).toBeVisible()
-    await trigger.click()
-    await expect(this.reactionPicker()).toBeVisible({ timeout: 10_000 })
-  }
-
-  async pickReaction(emoji: string) {
-    await this.reactionPicker()
-      .getByRole('option', { name: new RegExp(emoji) })
-      .click()
-    await expect(this.reactionPicker()).toHaveCount(0)
+    await expect(row.getByRole('listitem', { name: new RegExp(emoji) })).toBeVisible({
+      timeout: 15_000,
+    })
   }
 }

@@ -50,7 +50,6 @@ test.describe('Messages thread', () => {
   test('MSG06 Desktop reaction picker toggles an emoji', async ({
     profilePage,
     messagesPage,
-    page,
   }) => {
     const peerKey = env.peerUrlKey()
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
@@ -69,9 +68,7 @@ test.describe('Messages thread', () => {
 
     await messagesPage.openReactionPickerOnLastOutgoing(body)
     await messagesPage.pickReaction('👍')
-    await expect(page.getByRole('button', { name: /👍/ })).toBeVisible({
-      timeout: 15_000,
-    })
+    await messagesPage.expectReactionOnMessage(body, '👍')
   })
 
   test('MSG07 Message CTA without follow shows not-connected toast', async ({
