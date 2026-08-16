@@ -33,6 +33,7 @@ tests/
 - Guest/smoke specs run in the `guest` project; authenticated specs depend on `auth.setup.ts`.
 - Skip peer-only flows when `E2E_PEER_URL_KEY` is unset.
 - Skip Sendbird-dependent assertions when the inbox shows unavailable / session error (`MessagesPage.isMessagingAvailable()`).
+- Messaging a peer requires a follow relationship either way (`canMessagePeer`). Always `followPeer()` before MSG04–MSG06; use `unfollowPeer()` for the not-connected toast case (MSG07).
 
 ## Selectors (priority)
 

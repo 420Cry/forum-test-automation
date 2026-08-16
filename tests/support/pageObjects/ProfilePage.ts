@@ -37,6 +37,38 @@ export class ProfilePage extends BasePage {
     if (!ok) await expect(follow).toHaveText(/following|đang theo dõi/i)
   }
 
+  /** Ensure we are not following this peer (needed for DM gate assertions). */
+  async unfollowPeer() {
+    const follow = this.followButton()
+    await expect(follow).toBeVisible()
+    await expect(follow).toBeEnabled({ timeout: 15_000 })
+    const label = (await follow.textContent())?.trim() ?? ''
+    // Idle CTA is "+ Follow" / "Theo dõi" — already not following.
+    if (/follow|theo dõi/i.test(label) && !/following|đang theo dõi/i.test(label)) {
+      return
+    }
+
+    const ok = await retryUntil(async () => {
+      const unfollowRequest = this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/follows')
+          && response.request().method() === 'DELETE'
+          && response.ok(),
+        { timeout: 15_000 },
+      )
+      await follow.click()
+      await unfollowRequest.catch(() => undefined)
+      const nextLabel = (await follow.textContent())?.trim() ?? ''
+      return /follow|theo dõi/i.test(nextLabel)
+        && !/following|đang theo dõi/i.test(nextLabel)
+    })
+
+    if (!ok) {
+      await expect(follow).toHaveText(/follow|theo dõi/i)
+      await expect(follow).not.toHaveText(/following|đang theo dõi/i)
+    }
+  }
+
   ownPreviewBanner() {
     // Legacy banner copy was removed; keep helper for expectOtherProfile callers.
     return this.page.getByText(

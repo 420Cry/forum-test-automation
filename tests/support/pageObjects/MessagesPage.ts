@@ -16,6 +16,22 @@ export class MessagesPage extends BasePage {
     return this.search().locator('xpath=ancestor::aside[1]')
   }
 
+  contactRows() {
+    return this.page.getByTestId('messages-contact-row')
+  }
+
+  peopleSectionHint() {
+    return this.page.getByText(
+      /message someone you follow|nhắn tin với người bạn theo dõi/i,
+    )
+  }
+
+  notConnectedToast() {
+    return this.page.getByText(
+      /follow each other first|hãy theo dõi nhau trước/i,
+    )
+  }
+
   heading() {
     return this.page.getByRole('heading', {
       name: /messages|tin nhắn/i,

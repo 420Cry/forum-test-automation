@@ -2,7 +2,7 @@ import { test, expect } from '../../support/fixtures/test'
 import { env } from '../../config/env'
 
 test.describe('Messages thread', () => {
-  test('MSG04 Message CTA on peer profile opens a thread', async ({
+  test('MSG04 Message CTA on followed peer opens a thread', async ({
     profilePage,
     messagesPage,
   }) => {
@@ -11,6 +11,8 @@ test.describe('Messages thread', () => {
 
     await profilePage.goto(peerKey)
     await profilePage.expectOtherProfile()
+    // DM open is gated: follow either direction required.
+    await profilePage.followPeer()
     await expect(messagesPage.profileMessageButton()).toBeVisible()
 
     await messagesPage.profileMessageButton().click()
@@ -30,6 +32,7 @@ test.describe('Messages thread', () => {
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
 
     await profilePage.goto(peerKey)
+    await profilePage.followPeer()
     await messagesPage.profileMessageButton().click()
     await messagesPage.expectSettled()
 
@@ -53,6 +56,7 @@ test.describe('Messages thread', () => {
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
 
     await profilePage.goto(peerKey)
+    await profilePage.followPeer()
     await messagesPage.profileMessageButton().click()
     await messagesPage.expectSettled()
 
@@ -68,5 +72,35 @@ test.describe('Messages thread', () => {
     await expect(page.getByRole('button', { name: /👍/ })).toBeVisible({
       timeout: 15_000,
     })
+  })
+
+  test('MSG07 Message CTA without follow shows not-connected toast', async ({
+    profilePage,
+    messagesPage,
+    page,
+  }) => {
+    const peerKey = env.peerUrlKey()
+    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
+
+    await profilePage.goto(peerKey)
+    await profilePage.expectOtherProfile()
+    await profilePage.unfollowPeer()
+
+    await messagesPage.profileMessageButton().click()
+
+    // One-way follow from peer still allows DMs — skip if channel opens.
+    const opened = await page
+      .waitForURL(/channelUrl=/, { timeout: 8_000 })
+      .then(() => true)
+      .catch(() => false)
+    test.skip(
+      opened,
+      'Peer still follows primary (DM allowed either direction)',
+    )
+
+    await expect(messagesPage.notConnectedToast()).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page).not.toHaveURL(/channelUrl=/)
   })
 })
