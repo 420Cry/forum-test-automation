@@ -1,25 +1,26 @@
 import { test, expect } from '../../support/fixtures/test'
-import { env } from '../../config/env'
+import { openPeerThread, requirePeerKey } from '../../support/flows/peerThread'
+
+const UNAVAILABLE = 'Sendbird messaging unavailable in this environment'
 
 test.describe('Messages thread', () => {
+  // MSG04-06 follow the peer and MSG07 unfollows, so they must not race each
+  // other under the project-wide `fullyParallel`. 'default' keeps them in one
+  // worker without serial's cascade-skip on failure; `peerFollowLock` keeps
+  // specs in other files out of the same edge.
+  test.describe.configure({ mode: 'default' })
+
   test('MSG04 Message CTA on followed peer opens a thread', async ({
     profilePage,
     messagesPage,
+    peerFollowLock: _lock,
   }) => {
-    const peerKey = env.peerUrlKey()
-    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
-
-    await profilePage.goto(peerKey)
-    await profilePage.expectOtherProfile()
-    // DM open is gated: follow either direction required.
-    await profilePage.followPeer()
-    await expect(messagesPage.profileMessageButton()).toBeVisible()
-
-    await messagesPage.profileMessageButton().click()
-    await messagesPage.expectSettled()
-
-    const available = await messagesPage.isMessagingAvailable()
-    test.skip(!available, 'Sendbird messaging unavailable in this environment')
+    const ready = await openPeerThread(
+      profilePage,
+      messagesPage,
+      requirePeerKey(),
+    )
+    test.skip(!ready, UNAVAILABLE)
 
     await messagesPage.expectThreadOpen()
   })
@@ -27,21 +28,17 @@ test.describe('Messages thread', () => {
   test('MSG05 Send message shows bubble and delivery status', async ({
     profilePage,
     messagesPage,
+    peerFollowLock: _lock,
   }) => {
-    const peerKey = env.peerUrlKey()
-    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
-
-    await profilePage.goto(peerKey)
-    await profilePage.followPeer()
-    await messagesPage.profileMessageButton().click()
-    await messagesPage.expectSettled()
-
-    const available = await messagesPage.isMessagingAvailable()
-    test.skip(!available, 'Sendbird messaging unavailable in this environment')
+    const ready = await openPeerThread(
+      profilePage,
+      messagesPage,
+      requirePeerKey(),
+    )
+    test.skip(!ready, UNAVAILABLE)
 
     await messagesPage.expectThreadOpen()
-    const body = `e2e msg ${Date.now()}`
-    await messagesPage.sendMessage(body)
+    await messagesPage.sendMessage(`e2e msg ${Date.now()}`)
     await expect(messagesPage.deliveryStatus().last()).toBeVisible({
       timeout: 15_000,
     })
@@ -50,24 +47,20 @@ test.describe('Messages thread', () => {
   test('MSG06 Desktop reaction picker toggles an emoji', async ({
     profilePage,
     messagesPage,
+    peerFollowLock: _lock,
   }) => {
-    const peerKey = env.peerUrlKey()
-    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
-
-    await profilePage.goto(peerKey)
-    await profilePage.followPeer()
-    await messagesPage.profileMessageButton().click()
-    await messagesPage.expectSettled()
-
-    const available = await messagesPage.isMessagingAvailable()
-    test.skip(!available, 'Sendbird messaging unavailable in this environment')
+    const ready = await openPeerThread(
+      profilePage,
+      messagesPage,
+      requirePeerKey(),
+    )
+    test.skip(!ready, UNAVAILABLE)
 
     await messagesPage.expectThreadOpen()
     const body = `e2e react ${Date.now()}`
     await messagesPage.sendMessage(body)
 
-    await messagesPage.openReactionPickerOnLastOutgoing(body)
-    await messagesPage.pickReaction('👍')
+    await messagesPage.reactWith(body, '👍')
     await messagesPage.expectReactionOnMessage(body, '👍')
   })
 
@@ -75,11 +68,9 @@ test.describe('Messages thread', () => {
     profilePage,
     messagesPage,
     page,
+    peerFollowLock: _lock,
   }) => {
-    const peerKey = env.peerUrlKey()
-    expect(peerKey, 'E2E_PEER_URL_KEY is required for peer messaging').toBeTruthy()
-
-    await profilePage.goto(peerKey)
+    await profilePage.goto(requirePeerKey())
     await profilePage.expectOtherProfile()
     await profilePage.unfollowPeer()
 

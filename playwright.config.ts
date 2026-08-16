@@ -16,7 +16,9 @@ export default defineConfig({
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'playwright-report/results.json' }],
   ],
-  timeout: 60_000,
+  // Generous: follow-edge specs queue on `peerFollowLock`, and the wait counts
+  // against the test's own budget.
+  timeout: 90_000,
   expect: { timeout: 10_000 },
   use: {
     baseURL,

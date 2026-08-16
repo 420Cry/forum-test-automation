@@ -1,11 +1,12 @@
-import { expect } from '@playwright/test'
+import { type Locator, expect } from '@playwright/test'
 import { localePath } from '../../config/env'
+import { chatText } from '../locators/chatText'
 import { BasePage } from './BasePage'
 
 /** Messages inbox + thread (`/messages`) — prefers role / aria / ids over FE testids. */
 export class MessagesPage extends BasePage {
   headerMessagesLink() {
-    return this.page.getByRole('link', { name: /^(?:messages|tin nhắn)$/i })
+    return this.page.getByRole('link', { name: chatText.messagesLink })
   }
 
   search() {
@@ -21,33 +22,23 @@ export class MessagesPage extends BasePage {
   }
 
   peopleSectionHint() {
-    return this.page.getByText(
-      /message someone you follow|nhắn tin với người bạn theo dõi/i,
-    )
+    return this.page.getByText(chatText.peopleHint)
   }
 
   notConnectedToast() {
-    return this.page.getByRole('alert').filter({
-      hasText: /follow each other first|hãy theo dõi nhau trước/i,
-    })
+    return this.page.getByRole('alert').filter({ hasText: chatText.notConnected })
   }
 
   heading() {
-    return this.page.getByRole('heading', {
-      name: /messages|tin nhắn/i,
-    })
+    return this.page.getByRole('heading', { name: chatText.heading })
   }
 
   unavailableCopy() {
-    return this.page.getByText(
-      /messaging is not available|tin nhắn chưa sẵn sàng/i,
-    )
+    return this.page.getByText(chatText.unavailable)
   }
 
   sessionErrorCopy() {
-    return this.page.getByText(
-      /could not open messages|không mở được tin nhắn/i,
-    )
+    return this.page.getByText(chatText.sessionError)
   }
 
   composer() {
@@ -55,13 +46,7 @@ export class MessagesPage extends BasePage {
   }
 
   sendButton() {
-    return this.page.getByRole('button', {
-      name: /send message|gửi tin nhắn/i,
-    })
-  }
-
-  reactionTrigger() {
-    return this.page.getByTestId('chat-reaction-trigger')
+    return this.page.getByRole('button', { name: chatText.sendButton })
   }
 
   reactionPicker() {
@@ -69,15 +54,25 @@ export class MessagesPage extends BasePage {
   }
 
   deliveryStatus() {
-    return this.page.getByLabel(
-      /^(?:sending|failed to send|sent|delivered|seen|đang gửi|gửi thất bại|đã gửi|đã nhận|đã xem)$/i,
-    )
+    return this.page.getByLabel(chatText.status.any)
   }
 
   profileMessageButton() {
-    return this.page.getByRole('button', {
-      name: /^(?:message|nhắn tin|sign in to message|đăng nhập để nhắn tin)$/i,
-    })
+    return this.page.getByRole('button', { name: chatText.messageCta })
+  }
+
+  /**
+   * Bubble rows (`.group/msg`) carrying `text`. Scoped to the thread on
+   * purpose: the channel-list preview repeats the last message verbatim.
+   */
+  messageRows(text: string): Locator {
+    return this.page
+      .locator('.group\\/msg')
+      .filter({ has: this.page.getByText(text, { exact: true }) })
+  }
+
+  messageRow(text: string): Locator {
+    return this.messageRows(text).last()
   }
 
   async goto(query?: { channelUrl?: string, userId?: string }) {
@@ -86,34 +81,33 @@ export class MessagesPage extends BasePage {
     if (query?.channelUrl) params.set('channelUrl', query.channelUrl)
     if (query?.userId) params.set('userId', query.userId)
     const qs = params.toString()
-    await this.page.goto(
-      localePath(`/messages${qs ? `?${qs}` : ''}`),
-    )
+    await this.page.goto(localePath(`/messages${qs ? `?${qs}` : ''}`))
     await this.assertAppReachable()
   }
 
   async openFromHeader() {
     await this.ensureProfileCached()
     await this.headerMessagesLink().click()
-    await expect(this.page).toHaveURL(/\/messages/)
+    await this.expectOnInbox()
     await this.assertAppReachable()
+  }
+
+  /** URL-only check — safe to race inside a retry loop. */
+  async expectOnInbox(timeout = 10_000) {
+    await expect(this.page).toHaveURL(/\/messages/, { timeout })
   }
 
   /** True when Sendbird session is ready (not unavailable / session error). */
   async isMessagingAvailable(): Promise<boolean> {
     await this.expectSettled()
-    if (await this.unavailableCopy().isVisible().catch(() => false)) {
-      return false
-    }
-    if (await this.sessionErrorCopy().isVisible().catch(() => false)) {
-      return false
-    }
+    if (await this.unavailableCopy().isVisible().catch(() => false)) return false
+    if (await this.sessionErrorCopy().isVisible().catch(() => false)) return false
     return this.search().isVisible().catch(() => false)
   }
 
   /** Wait until loading finishes and a terminal inbox surface is shown. */
   async expectSettled() {
-    await expect(this.page).toHaveURL(/\/messages/)
+    await this.expectOnInbox()
     await expect
       .poll(
         async () => {
@@ -146,42 +140,59 @@ export class MessagesPage extends BasePage {
     await expect(this.composer()).toBeEnabled()
     await this.fillStable(this.composer(), text)
     await this.sendButton().click()
-    await expect(this.page.getByText(text, { exact: true }).last()).toBeVisible({
-      timeout: 20_000,
-    })
-  }
 
-  async openReactionPickerOnLastOutgoing(text: string) {
-    // Message rows remount when Sendbird updates delivery/reactions — retry.
+    // Poll one settled row: a wiped pending bubble makes pending-count 0 look
+    // like success, so require the bubble AND a non-pending delivery label.
     await expect(async () => {
-      const row = this.page
-        .locator('.group\\/msg')
-        .filter({ has: this.page.getByText(text, { exact: true }) })
-        .last()
-      await expect(row).toBeVisible()
-      await row.hover({ force: true })
-      await row.getByTestId('chat-reaction-trigger').click({ force: true })
-      await expect(this.reactionPicker()).toBeVisible({ timeout: 3_000 })
-    }).toPass({ timeout: 20_000 })
+      const row = this.messageRow(text)
+      await expect(row).toBeVisible({ timeout: 3_000 })
+      await row.scrollIntoViewIfNeeded()
+      await expect(row.getByLabel(chatText.status.pending)).toHaveCount(0, {
+        timeout: 2_000,
+      })
+      await expect(row.getByLabel(chatText.status.settled)).toBeVisible({
+        timeout: 3_000,
+      })
+    }).toPass({ timeout: 30_000, intervals: [500, 1_000] })
   }
 
-  async pickReaction(emoji: string) {
-    const picker = this.reactionPicker()
-    await picker.getByRole('option', { name: new RegExp(emoji) }).click()
-    await expect(picker).toBeHidden({ timeout: 10_000 })
+  reactionChip(text: string, emoji: string): Locator {
+    return this.messageRow(text)
+      .getByTestId('chat-reaction-chip')
+      .filter({ hasText: emoji })
   }
 
-  /** Reaction chips use role=listitem (aria: "{emoji}, {count}"). */
-  reactionChip(emoji: string) {
-    return this.page.getByRole('listitem', { name: new RegExp(emoji) })
+  /**
+   * Open the desktop picker and react with `emoji`.
+   *
+   * Opening and picking are one retryable unit on purpose: the picker closes on
+   * any thread scroll (receipts, incoming messages), so a picker opened in a
+   * previous step may be gone by the time the emoji is clicked. Per-action
+   * timeouts stay short so a stale handle fails fast and the loop starts over.
+   */
+  async reactWith(text: string, emoji: string) {
+    const option = this.reactionPicker().getByRole('option', {
+      name: new RegExp(`React with\\s*${emoji}|${emoji}`),
+    })
+    await expect(async () => {
+      // Already applied by an earlier attempt — retrying would toggle it off.
+      if (await this.reactionChip(text, emoji).isVisible().catch(() => false)) {
+        return
+      }
+      const row = this.messageRow(text)
+      await row.hover({ force: true, timeout: 3_000 })
+      const trigger = row.getByTestId('chat-reaction-trigger')
+      await expect(trigger).toBeEnabled({ timeout: 3_000 })
+      await trigger.click({ force: true, timeout: 3_000 })
+      await option.click({ timeout: 3_000 })
+      await expect(this.reactionChip(text, emoji)).toBeVisible({
+        timeout: 5_000,
+      })
+    }).toPass({ timeout: 40_000, intervals: [500, 1_000] })
   }
 
   async expectReactionOnMessage(text: string, emoji: string) {
-    const row = this.page
-      .locator('.group\\/msg')
-      .filter({ has: this.page.getByText(text, { exact: true }) })
-      .last()
-    await expect(row.getByRole('listitem', { name: new RegExp(emoji) })).toBeVisible({
+    await expect(this.reactionChip(text, emoji)).toBeVisible({
       timeout: 15_000,
     })
   }

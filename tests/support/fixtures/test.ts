@@ -1,4 +1,5 @@
 import { test as base } from '@playwright/test'
+import { withResourceLock } from '../helpers/resourceLock'
 import { AppShellPage } from '../pageObjects/AppShellPage'
 import { ForgotPasswordPage, RegisterPage } from '../pageObjects/AuthPages'
 import { FindPage } from '../pageObjects/FindPage'
@@ -23,7 +24,16 @@ type Pages = {
   appShellPage: AppShellPage
 }
 
-export const test = base.extend<Pages>({
+type Locks = {
+  /**
+   * Declare in any test that follows/unfollows the seeded peer, or asserts on
+   * that edge. The whole suite shares two accounts, so without this the
+   * follow state is mutated underneath tests running in the other worker.
+   */
+  peerFollowLock: void
+}
+
+export const test = base.extend<Pages & Locks>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page))
   },
@@ -56,6 +66,14 @@ export const test = base.extend<Pages>({
   },
   appShellPage: async ({ page }, use) => {
     await use(new AppShellPage(page))
+  },
+  // Playwright reads the destructured pattern to resolve dependencies; this
+  // fixture needs none, and an empty pattern is the documented way to say so.
+  // eslint-disable-next-line no-empty-pattern
+  peerFollowLock: async ({}, use) => {
+    await withResourceLock('peer-follow', async () => {
+      await use()
+    })
   },
 })
 
