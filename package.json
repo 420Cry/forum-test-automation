@@ -20,6 +20,7 @@
     "playwright:test:following": "playwright test tests/e2e/following",
     "playwright:test:settings": "playwright test tests/e2e/settings",
     "playwright:test:navigation": "playwright test tests/e2e/navigation",
+    "playwright:test:messages": "playwright test tests/e2e/messages",
     "playwright:test:journey": "playwright test tests/e2e/journey",
     "playwright:test:social": "playwright test tests/e2e/social",
     "playwright:report": "playwright show-report",
