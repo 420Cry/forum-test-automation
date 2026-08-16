@@ -36,7 +36,7 @@ Forum stack must be up (`http://app.forum.test` by default). Without `E2E_EMAIL`
 - Prefer `data-testid`, role + accessible name, or aria — not CSS class chains.
 - Prefer locale-aware regex (`/sign in|đăng nhập/i`) until Phrase i18n fixtures exist.
 - Put new page objects in `tests/support/pageObjects/`; put specs under `tests/e2e/`.
-- Test IDs in titles: `SMK*`, `NAV*`, `SOC*`, `FIND*`, `PROF*`, `FLW*`, `SET*`, `JOUR*`.
+- Test IDs in titles: `SMK*`, `NAV*`, `SOC*`, `FIND*`, `PROF*`, `FLW*`, `MSG*`, `SET*`, `JOUR*`.
 - Cover **UI rendering** (headings/fields visible) and at least one **full journey** for authenticated paths when credentials exist.
 
 ## Layout
@@ -47,7 +47,7 @@ tests/
   config/env.ts
   e2e/
     smoke/                   # guest project (no session)
-    navigation/ social/ find/ profile/ following/ settings/ journey/
+    navigation/ social/ find/ profile/ following/ messages/ settings/ journey/
   support/
     pageObjects/
     helpers/

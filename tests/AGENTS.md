@@ -13,6 +13,7 @@ tests/
 │   ├── find/           FIND*
 │   ├── profile/        PROF*
 │   ├── following/      FLW*
+│   ├── messages/       MSG* — inbox, peer thread, send, reactions
 │   ├── settings/       SET* — hub + profile editor + location autocomplete
 │   └── journey/        JOUR* — multi-page authenticated flows
 ├── support/
@@ -31,12 +32,13 @@ tests/
 - Reuse page objects before adding locators in specs.
 - Guest/smoke specs run in the `guest` project; authenticated specs depend on `auth.setup.ts`.
 - Skip peer-only flows when `E2E_PEER_URL_KEY` is unset.
+- Skip Sendbird-dependent assertions when the inbox shows unavailable / session error (`MessagesPage.isMessagingAvailable()`).
 
 ## Selectors (priority)
 
-1. `[data-testid="…"]` (none in app yet — prefer adding when roles are weak)
-2. `getByRole(…, { name })`
-3. Stable ids (`#email`, `#find-q`, `#settings-location`)
+1. `[data-testid="…"]` — only when already present in the app for product reasons; prefer not adding FE hooks solely for e2e
+2. `getByRole(…, { name })` / aria-label
+3. Stable ids (`#email`, `#find-q`, `#settings-location`, `#messages-search`, `#chat-composer`)
 4. Multi-locale regex as last resort: `/filters|bộ lọc/i`
 
 Never hardcode a single locale string when the UI is bilingual.

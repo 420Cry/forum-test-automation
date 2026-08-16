@@ -6,13 +6,14 @@ import { env } from '../../config/env'
  * Requires E2E_EMAIL / E2E_PASSWORD (auth.setup) and an onboarded user.
  */
 test.describe('Authenticated journey', () => {
-  test('JOUR01 Social → Find search → own profile → settings edit surface', async ({
+  test('JOUR01 Social → Find search → own profile → settings edit surface → messages', async ({
     page,
     socialPage,
     findPage,
     profilePage,
     settingsProfilePage,
     appShellPage,
+    messagesPage,
   }) => {
     await test.step('Land on social shell', async () => {
       await socialPage.goto()
@@ -42,6 +43,11 @@ test.describe('Authenticated journey', () => {
       await settingsProfilePage.startEditing()
       await expect(settingsProfilePage.location()).toBeVisible()
       await settingsProfilePage.cancelButton().click()
+    })
+    await test.step('Open messages inbox', async () => {
+      await messagesPage.openFromHeader()
+      await messagesPage.expectSettled()
+      await expect(messagesPage.heading().first()).toBeVisible()
     })
   })
 

@@ -75,6 +75,7 @@ export class AppShellPage extends BasePage {
     await expect(this.logo()).toBeVisible()
     await expect(this.profileAvatarButton()).toBeVisible()
     await expect(this.accountMenuButton()).toBeVisible()
+    await expect(this.page.getByRole('link', { name: /^(?:messages|tin nhắn)$/i })).toBeVisible()
     await expect(this.navLink(/social/i)).toBeVisible()
     await expect(this.navLink(/find|tìm/i)).toBeVisible()
     await expect(this.navLink(/following|đang theo dõi/i)).toBeVisible()

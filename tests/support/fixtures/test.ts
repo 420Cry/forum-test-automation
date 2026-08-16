@@ -4,6 +4,7 @@ import { ForgotPasswordPage, RegisterPage } from '../pageObjects/AuthPages'
 import { FindPage } from '../pageObjects/FindPage'
 import { FollowingPage } from '../pageObjects/FollowingPage'
 import { LoginPage } from '../pageObjects/LoginPage'
+import { MessagesPage } from '../pageObjects/MessagesPage'
 import { ProfilePage } from '../pageObjects/ProfilePage'
 import { SettingsHubPage } from '../pageObjects/SettingsHubPage'
 import { SettingsProfilePage } from '../pageObjects/SettingsProfilePage'
@@ -15,6 +16,7 @@ type Pages = {
   findPage: FindPage
   profilePage: ProfilePage
   followingPage: FollowingPage
+  messagesPage: MessagesPage
   socialPage: AppShellPage
   settingsHubPage: SettingsHubPage
   settingsProfilePage: SettingsProfilePage
@@ -39,6 +41,9 @@ export const test = base.extend<Pages>({
   },
   followingPage: async ({ page }, use) => {
     await use(new FollowingPage(page))
+  },
+  messagesPage: async ({ page }, use) => {
+    await use(new MessagesPage(page))
   },
   socialPage: async ({ page }, use) => {
     await use(new AppShellPage(page))
