@@ -10,6 +10,7 @@ test.describe('Follow', () => {
   test('FLW02 Follow then unfollow from peer profile', async ({
     profilePage,
     followingPage,
+    peerFollowLock: _lock,
   }) => {
     const peerKey = env.peerUrlKey()
     expect(peerKey, 'E2E_PEER_URL_KEY is required for follow flow').toBeTruthy()

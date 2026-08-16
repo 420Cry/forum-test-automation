@@ -1,11 +1,12 @@
 import { expect } from '@playwright/test'
 import { localePath } from '../../config/env'
+import { chatText } from '../locators/chatText'
 import { BasePage } from './BasePage'
 
-/** Messages inbox + thread (`/messages`) — prefers role / aria / ids over FE testids. */
+/** Messages inbox (`/messages`) — prefers role / aria / ids over FE testids. */
 export class MessagesPage extends BasePage {
   headerMessagesLink() {
-    return this.page.getByRole('link', { name: /^(?:messages|tin nhắn)$/i })
+    return this.page.getByRole('link', { name: chatText.messagesLink })
   }
 
   search() {
@@ -17,91 +18,45 @@ export class MessagesPage extends BasePage {
   }
 
   heading() {
-    return this.page.getByRole('heading', {
-      name: /messages|tin nhắn/i,
-    })
+    return this.page.getByRole('heading', { name: chatText.heading })
   }
 
   unavailableCopy() {
-    return this.page.getByText(
-      /messaging is not available|tin nhắn chưa sẵn sàng/i,
-    )
+    return this.page.getByText(chatText.unavailable)
   }
 
   sessionErrorCopy() {
-    return this.page.getByText(
-      /could not open messages|không mở được tin nhắn/i,
-    )
+    return this.page.getByText(chatText.sessionError)
   }
 
-  composer() {
-    return this.page.locator('#chat-composer')
-  }
-
-  sendButton() {
-    return this.page.getByRole('button', {
-      name: /send message|gửi tin nhắn/i,
-    })
-  }
-
-  reactionTrigger() {
-    return this.page.getByRole('button', {
-      name: /add reaction|thêm cảm xúc/i,
-    })
-  }
-
-  reactionPicker() {
-    return this.page.getByRole('listbox', {
-      name: /choose a reaction|chọn cảm xúc/i,
-    })
-  }
-
-  deliveryStatus() {
-    return this.page.getByLabel(
-      /^(?:sending|failed to send|sent|delivered|seen|đang gửi|gửi thất bại|đã gửi|đã nhận|đã xem)$/i,
-    )
-  }
-
-  profileMessageButton() {
-    return this.page.getByRole('button', {
-      name: /^(?:message|nhắn tin|sign in to message|đăng nhập để nhắn tin)$/i,
-    })
-  }
-
-  async goto(query?: { channelUrl?: string, userId?: string }) {
+  async goto() {
     await this.ensureProfileCached()
-    const params = new URLSearchParams()
-    if (query?.channelUrl) params.set('channelUrl', query.channelUrl)
-    if (query?.userId) params.set('userId', query.userId)
-    const qs = params.toString()
-    await this.page.goto(
-      localePath(`/messages${qs ? `?${qs}` : ''}`),
-    )
+    await this.page.goto(localePath('/messages'))
     await this.assertAppReachable()
   }
 
   async openFromHeader() {
     await this.ensureProfileCached()
     await this.headerMessagesLink().click()
-    await expect(this.page).toHaveURL(/\/messages/)
+    await this.expectOnInbox()
     await this.assertAppReachable()
+  }
+
+  async expectOnInbox(timeout = 10_000) {
+    await expect(this.page).toHaveURL(/\/messages/, { timeout })
   }
 
   /** True when Sendbird session is ready (not unavailable / session error). */
   async isMessagingAvailable(): Promise<boolean> {
     await this.expectSettled()
-    if (await this.unavailableCopy().isVisible().catch(() => false)) {
-      return false
-    }
-    if (await this.sessionErrorCopy().isVisible().catch(() => false)) {
-      return false
-    }
+    if (await this.unavailableCopy().isVisible().catch(() => false)) return false
+    if (await this.sessionErrorCopy().isVisible().catch(() => false)) return false
     return this.search().isVisible().catch(() => false)
   }
 
   /** Wait until loading finishes and a terminal inbox surface is shown. */
   async expectSettled() {
-    await expect(this.page).toHaveURL(/\/messages/)
+    await this.expectOnInbox()
     await expect
       .poll(
         async () => {
@@ -123,33 +78,5 @@ export class MessagesPage extends BasePage {
     await this.expectSettled()
     await expect(this.search()).toBeVisible()
     await expect(this.channelList()).toBeVisible()
-  }
-
-  async expectThreadOpen() {
-    await expect(this.page).toHaveURL(/channelUrl=/)
-    await expect(this.composer()).toBeVisible({ timeout: 20_000 })
-  }
-
-  async sendMessage(text: string) {
-    await expect(this.composer()).toBeEnabled()
-    await this.fillStable(this.composer(), text)
-    await this.sendButton().click()
-    await expect(this.page.getByText(text, { exact: true }).last()).toBeVisible({
-      timeout: 20_000,
-    })
-  }
-
-  async openReactionPickerOnLastOutgoing(text: string) {
-    const bubble = this.page.getByText(text, { exact: true }).last()
-    await bubble.hover()
-    await this.reactionTrigger().last().click()
-    await expect(this.reactionPicker()).toBeVisible()
-  }
-
-  async pickReaction(emoji: string) {
-    await this.reactionPicker()
-      .getByRole('option', { name: new RegExp(emoji) })
-      .click()
-    await expect(this.reactionPicker()).toHaveCount(0)
   }
 }

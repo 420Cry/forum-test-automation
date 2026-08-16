@@ -1,5 +1,9 @@
 import { test, expect } from '../../support/fixtures/test'
 
+/**
+ * Messages inbox shell — no Sendbird required.
+ * Deep DM / send / reaction coverage stays local (needs SENDBIRD_* on forum-api).
+ */
 test.describe('Messages inbox', () => {
   test('MSG01 Header messages link opens inbox', async ({
     socialPage,
@@ -15,30 +19,20 @@ test.describe('Messages inbox', () => {
     await expect(messagesPage.heading().first()).toBeVisible()
   })
 
-  test('MSG02 Inbox search renders when messaging is available', async ({
+  test('MSG02 Inbox settles to ready search or unavailable copy', async ({
     messagesPage,
   }) => {
     await messagesPage.goto()
     await messagesPage.expectSettled()
 
     const available = await messagesPage.isMessagingAvailable()
-    test.skip(!available, 'Sendbird messaging unavailable in this environment')
+    if (available) {
+      await messagesPage.expectReady()
+      await expect(messagesPage.search()).toBeEditable()
+      return
+    }
 
-    await messagesPage.expectReady()
-    await expect(messagesPage.search()).toBeEditable()
-  })
-
-  test('MSG03 Search connections filters contact rows', async ({
-    messagesPage,
-    page,
-  }) => {
-    await messagesPage.goto()
-    const available = await messagesPage.isMessagingAvailable()
-    test.skip(!available, 'Sendbird messaging unavailable in this environment')
-
-    await messagesPage.search().fill('zzzz-no-match-forum-e2e')
-    await expect(
-      page.getByText(/no people found|không tìm thấy/i),
-    ).toBeVisible({ timeout: 15_000 })
+    await expect(messagesPage.unavailableCopy().or(messagesPage.sessionErrorCopy()))
+      .toBeVisible()
   })
 })

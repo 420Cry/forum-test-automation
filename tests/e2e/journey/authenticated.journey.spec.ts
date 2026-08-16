@@ -56,6 +56,7 @@ test.describe('Authenticated journey', () => {
     profilePage,
     followingPage,
     page,
+    peerFollowLock: _lock,
   }) => {
     const peerKey = env.peerUrlKey()
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer journey').toBeTruthy()

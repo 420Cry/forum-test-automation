@@ -61,6 +61,7 @@ test.describe('Peer profile', () => {
   test('PROF06 Follow peer bumps own following count', async ({
     profilePage,
     appShellPage,
+    peerFollowLock: _lock,
   }) => {
     const peerKey = env.peerUrlKey()
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer profile flow').toBeTruthy()
