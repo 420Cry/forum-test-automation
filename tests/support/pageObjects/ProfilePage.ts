@@ -92,26 +92,27 @@ export class ProfilePage extends BasePage {
   async expectOwnProfile() {
     await expect(this.editProfileButton()).toBeVisible()
     await expect(this.followButton()).toHaveCount(0)
-    await this.expectUserFollowStats()
+    await this.expectUserFollowStats({ followingInteractive: true })
   }
 
   async expectOtherProfile() {
     await expect(this.editProfileButton()).toHaveCount(0)
     await expect(this.followButton()).toBeVisible()
-    await this.expectUserFollowStats()
+    // Peer following graphs are owner-only: count is visible text, not a button.
+    await this.expectUserFollowStats({ followingInteractive: false })
   }
 
-  async expectUserFollowStats() {
-    await expect(
-      this.page.getByRole('button', {
-        name: /\d+\s*(followers|người theo dõi)/i,
-      }),
-    ).toBeVisible()
-    await expect(
-      this.page.getByRole('button', {
-        name: /\d+\s*(following|đang theo dõi)/i,
-      }),
-    ).toBeVisible()
+  async expectUserFollowStats(
+    options: { followingInteractive?: boolean } = {},
+  ) {
+    const followingInteractive = options.followingInteractive ?? true
+    await expect(this.followersStatButton()).toBeVisible()
+    if (followingInteractive) {
+      await expect(this.followingStatButton()).toBeVisible()
+      return
+    }
+    await expect(this.followingStat()).toBeVisible()
+    await expect(this.followingStatButton()).toHaveCount(0)
   }
 
   followersStatButton() {
@@ -124,6 +125,11 @@ export class ProfilePage extends BasePage {
     return this.page.getByRole('button', {
       name: /\d+\s*(following|đang theo dõi)/i,
     })
+  }
+
+  /** Non-interactive following count on peer profiles (span, not a button). */
+  followingStat() {
+    return this.page.getByText(/\d+\s*(following|đang theo dõi)/i)
   }
 
   async followingCount(): Promise<number> {
