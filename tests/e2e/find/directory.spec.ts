@@ -46,12 +46,13 @@ test.describe('Find directory', () => {
     await expect(findPage.sortButton()).toContainText(/name a|tên a/i)
   })
 
-  test('FIND04 Type pills switch between people and orgs', async ({
+  test('FIND04 Type and role pills switch directory filters', async ({
     findPage,
   }) => {
     await findPage.goto()
     await findPage.selectType(/people|người/i)
-    await findPage.selectType(/startups|startup/i)
+    await findPage.selectRole(/founder/i)
+    await findPage.selectRole(/investor/i)
     await findPage.selectType(/all|tất cả/i)
     await expect(findPage.heading()).toBeVisible()
   })

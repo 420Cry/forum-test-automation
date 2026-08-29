@@ -98,8 +98,8 @@ export class ProfilePage extends BasePage {
   async expectOtherProfile() {
     await expect(this.editProfileButton()).toHaveCount(0)
     await expect(this.followButton()).toBeVisible()
-    // Peer following graphs are owner-only: count is visible text, not a button.
-    await this.expectUserFollowStats({ followingInteractive: false })
+    // Following list is viewable on any onboarded user's profile.
+    await this.expectUserFollowStats({ followingInteractive: true })
   }
 
   async expectUserFollowStats(
