@@ -39,12 +39,21 @@ test.describe('Follow', () => {
 
   test('FLW03 Following cards do not show raw city keys', async ({
     followingPage,
+    profilePage,
+    peerFollowLock: _lock,
   }) => {
+    const peerKey = env.peerUrlKey()
+    expect(peerKey, 'E2E_PEER_URL_KEY is required for follow flow').toBeTruthy()
+
+    await profilePage.goto(peerKey)
+    await profilePage.expectOtherProfile()
+    await profilePage.followPeer()
+
     await followingPage.goto()
     await followingPage.expectLoaded()
-
-    const count = await followingPage.cards().count()
-    test.skip(count === 0, 'No following cards to assert location labels')
+    await expect
+      .poll(async () => followingPage.cards().count(), { timeout: 15_000 })
+      .toBeGreaterThan(0)
 
     const text = await followingPage.cards().first().innerText()
     expect(text).not.toMatch(/city_[a-z0-9_]+/i)

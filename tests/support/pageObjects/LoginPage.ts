@@ -57,9 +57,11 @@ export class LoginPage extends BasePage {
   }
 
   createAccountLink() {
-    return this.page.getByRole('link', {
-      name: /create account|tạo tài khoản/i,
-    })
+    return this.page
+      .getByRole('link', {
+        name: /create account|tạo tài khoản/i,
+      })
+      .first()
   }
 
   forgotPasswordLink() {
@@ -71,7 +73,9 @@ export class LoginPage extends BasePage {
   async expectLoaded() {
     await this.assertAppReachable()
     await expect(
-      this.page.getByRole('heading', { name: /sign in|đăng nhập/i }),
+      this.page.getByRole('heading', {
+        name: /welcome back|sign in|đăng nhập|chào mừng trở lại/i,
+      }),
     ).toBeVisible()
     await expect(this.email()).toBeVisible()
     await expect(this.forgotPasswordLink()).toBeVisible()

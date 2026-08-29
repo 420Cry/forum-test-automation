@@ -17,40 +17,64 @@ async function assertSocialShell(page: Page) {
 export async function ensureProfileCached(page: Page) {
   if (
     page.url().includes('/social')
-    && (await profileButton(page).isVisible())
+    && (await profileButton(page).isVisible().catch(() => false))
   ) {
     await assertSocialShell(page)
     return
   }
 
-  const meResponse = page.waitForResponse(
-    (response) =>
-      response.url().includes('/auth/me')
-      && response.request().method() === 'GET'
-      && response.ok(),
-    { timeout: 20_000 },
-  )
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const meResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/auth/me')
+        && response.request().method() === 'GET'
+        && response.ok(),
+      { timeout: 25_000 },
+    )
 
-  await page.goto(localePath('/social'), { waitUntil: 'domcontentloaded' })
+    try {
+      await page.goto(localePath('/social'), {
+        waitUntil: 'domcontentloaded',
+        timeout: 45_000,
+      })
 
-  try {
-    const response = await meResponse
-    const me = (await response.json()) as { profile?: { onboarded?: boolean } }
-    if (!me.profile?.onboarded) {
-      throw new Error(
-        'E2E user is not onboarded. Re-run auth setup and forum db:migrate.',
-      )
+      const response = await meResponse
+      const me = (await response.json()) as { profile?: { onboarded?: boolean } }
+      if (!me.profile?.onboarded) {
+        throw new Error(
+          'E2E user is not onboarded. Re-run auth setup and forum db:migrate.',
+        )
+      }
+
+      await assertSocialShell(page)
+      return
+    }
+    catch (error) {
+      lastError = error
+      if (error instanceof Error && error.message.includes('not onboarded')) {
+        throw error
+      }
+
+      const onSocial = /\/social/.test(page.url())
+      const onOnboard = /\/onboard/.test(page.url())
+      if (onSocial && !onOnboard) {
+        try {
+          await assertSocialShell(page)
+          return
+        }
+        catch {
+          // Retry from a cold navigation.
+        }
+      }
+
+      if (attempt < 2) {
+        await page.waitForTimeout(750)
+      }
     }
   }
-  catch (error) {
-    if (error instanceof Error && error.message.includes('not onboarded')) {
-      throw error
-    }
-    await expect(page).toHaveURL(/\/social/, { timeout: 15_000 })
-    await expect(page).not.toHaveURL(/\/onboard/)
-  }
 
-  await assertSocialShell(page)
+  throw lastError
 }
 
 /** Client-side nav keeps the warmed profile cache in the SPA. */

@@ -24,14 +24,16 @@ export class RegisterPage extends BasePage {
   }
 
   signInLink() {
-    return this.page.getByRole('link', { name: /sign in|đăng nhập/i })
+    return this.page
+      .getByRole('link', { name: /sign in|đăng nhập/i })
+      .first()
   }
 
   async expectLoaded() {
     await this.assertAppReachable()
     await expect(
       this.page.getByRole('heading', {
-        name: /create account|tạo tài khoản/i,
+        name: /create (?:your )?account|tạo tài khoản/i,
       }),
     ).toBeVisible()
     await expect(this.email()).toBeVisible()
@@ -61,7 +63,7 @@ export class ForgotPasswordPage extends BasePage {
     await this.assertAppReachable()
     await expect(
       this.page.getByRole('heading', {
-        name: /reset password|đặt lại mật khẩu/i,
+        name: /reset (?:your )?password|đặt lại mật khẩu/i,
       }),
     ).toBeVisible()
     await expect(this.email()).toBeVisible()
