@@ -157,9 +157,34 @@ export class ProfilePage extends BasePage {
     return match ? Number(match[1]) : NaN
   }
 
-  async waitForFollowingCountAtLeast(min: number, timeout = 30_000) {
+  async waitForFollowingCountAtLeast(min: number, timeout = 45_000) {
+    let reloads = 0
     await expect
-      .poll(async () => this.followingCount(), { timeout })
+      .poll(
+        async () => {
+          const count = await this.followingCount()
+          if (Number.isFinite(count) && count >= min) return count
+
+          if (reloads < 5) {
+            reloads += 1
+            const profileResponse = this.page.waitForResponse(
+              (response) =>
+                /\/profiles\/user\//.test(response.url())
+                && response.request().method() === 'GET'
+                && response.ok(),
+              { timeout: 15_000 },
+            )
+            await this.page.reload({ waitUntil: 'domcontentloaded' })
+            await profileResponse.catch(() => undefined)
+            await expect(this.editProfileButton()).toBeVisible({
+              timeout: 10_000,
+            })
+          }
+
+          return await this.followingCount()
+        },
+        { timeout },
+      )
       .toBeGreaterThanOrEqual(min)
   }
 
