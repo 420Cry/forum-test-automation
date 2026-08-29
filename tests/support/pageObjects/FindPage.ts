@@ -83,6 +83,10 @@ export class FindPage extends BasePage {
     await this.typePill(label).click()
   }
 
+  async selectRole(label: RegExp) {
+    await this.typePill(label).click()
+  }
+
   async search(query: string) {
     await this.ensureOnFindPage()
     await this.fillStable(this.searchInput(), query)
