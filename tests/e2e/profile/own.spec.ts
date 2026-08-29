@@ -61,6 +61,7 @@ test.describe('Peer profile', () => {
   test('PROF06 Follow peer bumps own following count', async ({
     profilePage,
     appShellPage,
+    followingPage,
     peerFollowLock: _lock,
   }) => {
     const peerKey = env.peerUrlKey()
@@ -76,9 +77,16 @@ test.describe('Peer profile', () => {
     await profilePage.expectOtherProfile()
     await expect(profilePage.followButton()).toBeEnabled({ timeout: 15_000 })
     const followLabel = (await profilePage.followButton().textContent())?.trim() ?? ''
-    const alreadyFollowing = /following|đang theo dõi/i.test(followLabel)
+    const alreadyFollowing = /following|đang theo dõi|social\.action\.unfollow/i.test(
+      followLabel,
+    )
     if (!alreadyFollowing) {
       await profilePage.followPeer()
+      await followingPage.goto()
+      await followingPage.expectLoaded()
+      await expect
+        .poll(async () => followingPage.cards().count(), { timeout: 15_000 })
+        .toBeGreaterThan(0)
     }
 
     await appShellPage.openOwnProfileFromHeader()

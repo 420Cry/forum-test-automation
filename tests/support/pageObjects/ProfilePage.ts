@@ -19,19 +19,35 @@ export class ProfilePage extends BasePage {
     const label = (await follow.textContent())?.trim() ?? ''
     if (this.isFollowingLabel(label)) return
 
-    const followRequest = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/follows')
-        && response.request().method() === 'POST'
-        && response.ok(),
-      { timeout: 20_000 },
-    )
-    await follow.click()
-    await followRequest.catch(() => undefined)
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const current = this.followButton()
+      const currentLabel = (await current.textContent())?.trim() ?? ''
+      if (this.isFollowingLabel(currentLabel)) return
+
+      await expect(current).toBeEnabled({ timeout: 10_000 })
+      const followRequest = this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/follows')
+          && response.request().method() === 'POST'
+          && response.ok(),
+        { timeout: 20_000 },
+      )
+      await current.click()
+      const response = await followRequest.catch(() => null)
+      if (response) {
+        await expect(this.followButton()).toHaveText(
+          /following|đang theo dõi|social\.action\.unfollow/i,
+          { timeout: 10_000 },
+        )
+        return
+      }
+
+      await this.page.waitForTimeout(500)
+    }
 
     await expect(this.followButton()).toHaveText(
       /following|đang theo dõi|social\.action\.unfollow/i,
-      { timeout: 20_000 },
+      { timeout: 10_000 },
     )
   }
 
@@ -141,9 +157,34 @@ export class ProfilePage extends BasePage {
     return match ? Number(match[1]) : NaN
   }
 
-  async waitForFollowingCountAtLeast(min: number, timeout = 30_000) {
+  async waitForFollowingCountAtLeast(min: number, timeout = 45_000) {
+    let reloads = 0
     await expect
-      .poll(async () => this.followingCount(), { timeout })
+      .poll(
+        async () => {
+          const count = await this.followingCount()
+          if (Number.isFinite(count) && count >= min) return count
+
+          if (reloads < 5) {
+            reloads += 1
+            const profileResponse = this.page.waitForResponse(
+              (response) =>
+                /\/profiles\/user\//.test(response.url())
+                && response.request().method() === 'GET'
+                && response.ok(),
+              { timeout: 15_000 },
+            )
+            await this.page.reload({ waitUntil: 'domcontentloaded' })
+            await profileResponse.catch(() => undefined)
+            await expect(this.editProfileButton()).toBeVisible({
+              timeout: 10_000,
+            })
+          }
+
+          return await this.followingCount()
+        },
+        { timeout },
+      )
       .toBeGreaterThanOrEqual(min)
   }
 

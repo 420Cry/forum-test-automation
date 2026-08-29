@@ -38,8 +38,26 @@ export class FindPage extends BasePage {
     return this.page.getByRole('button', { name: /sort/i })
   }
 
+  private findPanel() {
+    return this.page.locator('section').filter({ has: this.searchInput() })
+  }
+
+  /** Type tabs (All / People) — not filter chips or "Clear all". */
+  typePills() {
+    return this.findPanel().locator('div.flex-wrap').first().getByRole('button')
+  }
+
+  /** Role quick filters — not removable facet chips below. */
+  rolePills() {
+    return this.findPanel().locator('div.flex-wrap').nth(1).getByRole('button')
+  }
+
   typePill(label: RegExp | string) {
-    return this.page.getByRole('button', { name: label })
+    return this.typePills().filter({ hasText: label })
+  }
+
+  rolePill(label: RegExp | string) {
+    return this.rolePills().filter({ hasText: label })
   }
 
   drawer() {
@@ -80,11 +98,11 @@ export class FindPage extends BasePage {
   }
 
   async selectType(label: RegExp) {
-    await this.typePill(label).click()
+    await this.typePill(label).first().click()
   }
 
   async selectRole(label: RegExp) {
-    await this.typePill(label).click()
+    await this.rolePill(label).first().click()
   }
 
   async search(query: string) {
