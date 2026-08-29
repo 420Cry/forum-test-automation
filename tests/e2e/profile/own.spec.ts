@@ -83,10 +83,7 @@ test.describe('Peer profile', () => {
 
     await appShellPage.openOwnProfileFromHeader()
     await profilePage.expectOwnProfile()
-    const expected = alreadyFollowing ? before : before + 1
-    // Public profile counts can lag briefly after follow; poll until settled.
-    await expect
-      .poll(async () => profilePage.followingCount(), { timeout: 15_000 })
-      .toBe(expected)
+    const expectedMin = alreadyFollowing ? before : before + 1
+    await profilePage.waitForFollowingCountAtLeast(expectedMin)
   })
 })

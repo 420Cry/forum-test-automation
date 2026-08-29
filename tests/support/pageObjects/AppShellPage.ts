@@ -93,9 +93,17 @@ export class AppShellPage extends BasePage {
 
   async openOwnProfileFromHeader() {
     await this.ensureProfileCached()
+    const profileResponse = this.page.waitForResponse(
+      (response) =>
+        /\/profiles\/user\//.test(response.url())
+        && response.request().method() === 'GET'
+        && response.ok(),
+      { timeout: 20_000 },
+    )
     await clickUntilReady(this.profileAvatarButton(), async () =>
       this.page.url().includes('/u/'),
     )
     await expect(this.page).toHaveURL(/\/u\//)
+    await profileResponse
   }
 }
