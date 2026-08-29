@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { clickUntilReady } from '../helpers/retry'
+import { waitForBusyCleared } from '../helpers/loading'
 import { BasePage } from './BasePage'
 
 export class FindPage extends BasePage {
@@ -27,15 +28,17 @@ export class FindPage extends BasePage {
   }
 
   searchButton() {
-    return this.page.getByRole('button', { name: /^(search|tìm kiếm)$/i })
+    return this.page.getByRole('button', {
+      name: /^(?:search|searching|tìm kiếm|đang tìm)/i,
+    })
   }
 
   filtersButton() {
-    return this.page.getByRole('button', { name: /^filters$|^bộ lọc$/i })
+    return this.findPanel().getByRole('button', { name: /filters|bộ lọc/i })
   }
 
   sortButton() {
-    return this.page.getByRole('button', { name: /sort/i })
+    return this.findPanel().getByRole('button', { name: /sort|sắp xếp/i })
   }
 
   private findPanel() {
@@ -65,19 +68,25 @@ export class FindPage extends BasePage {
   }
 
   async openFilters() {
-    await this.clickDrawerTrigger(/^filters$|^bộ lọc$/i)
+    await this.clickDrawerTrigger(this.filtersButton())
   }
 
   async openSort() {
-    await this.clickDrawerTrigger(/sort|sắp xếp/i)
+    await this.clickDrawerTrigger(this.sortButton())
   }
 
-  private async clickDrawerTrigger(buttonName: RegExp) {
+  async waitForSettled(timeout = 20_000) {
+    await waitForBusyCleared(this.page, timeout)
+  }
+
+  private async clickDrawerTrigger(
+    trigger: ReturnType<FindPage['filtersButton']>,
+  ) {
     await this.ensureOnFindPage()
     await this.expectLoaded()
+    await this.waitForSettled()
 
     const drawer = this.drawer()
-    const trigger = this.page.getByRole('button', { name: buttonName })
     await expect(trigger).toBeVisible({ timeout: 10_000 })
 
     const ok = await clickUntilReady(
@@ -88,8 +97,9 @@ export class FindPage extends BasePage {
     if (!ok) {
       await this.openFindViaNav()
       await this.expectLoaded()
+      await this.waitForSettled()
       await clickUntilReady(
-        this.page.getByRole('button', { name: buttonName }),
+        trigger,
         () => drawer.isVisible(),
         { attempts: 8, delayMs: 300 },
       )
@@ -107,19 +117,22 @@ export class FindPage extends BasePage {
 
   async search(query: string) {
     await this.ensureOnFindPage()
+    await this.waitForSettled()
     await this.fillStable(this.searchInput(), query)
     await this.searchButton().click()
+    await this.waitForSettled()
   }
 
   resultCards() {
-    return this.page.locator('article')
+    return this.page.locator('article:not([aria-hidden])')
   }
 
   emptyOrResults() {
-    return this.page
-      .locator('article')
-      .or(this.page.getByText(/no matches yet|không có kết quả|try a different search/i))
-      .or(this.page.getByText(/loading|đang tải/i))
+    return this.resultCards().or(
+      this.page.getByText(
+        /no matches yet|không có kết quả|try a different search|chưa có gợi ý/i,
+      ),
+    )
   }
 
   async expectLoaded() {
@@ -127,5 +140,6 @@ export class FindPage extends BasePage {
     await expect(this.searchInput()).toBeVisible()
     await expect(this.filtersButton()).toBeVisible()
     await expect(this.sortButton()).toBeVisible()
+    await this.waitForSettled()
   }
 }

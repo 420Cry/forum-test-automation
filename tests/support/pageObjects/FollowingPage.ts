@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { localePath } from '../../config/env'
+import { waitForBusyCleared } from '../helpers/loading'
 import { BasePage } from './BasePage'
 
 export class FollowingPage extends BasePage {
@@ -20,13 +21,16 @@ export class FollowingPage extends BasePage {
   }
 
   cards() {
-    return this.page.locator('article')
+    return this.page.locator('article:not([aria-hidden])')
+  }
+
+  async cardCount() {
+    await this.expectLoaded()
+    return this.cards().count()
   }
 
   async expectLoaded() {
     await expect(this.heading()).toBeVisible()
-    await expect(this.page.getByText(/loading|đang tải/i)).toHaveCount(0, {
-      timeout: 15_000,
-    })
+    await waitForBusyCleared(this.page, 20_000)
   }
 }

@@ -91,8 +91,18 @@ export class AppShellPage extends BasePage {
     await expect(this.socialFeedSoonCopy()).toBeVisible()
   }
 
+  async waitForAccountReady(timeout = 20_000) {
+    await expect(this.profileAvatarButton()).toBeVisible({ timeout })
+    await expect(this.profileAvatarButton()).not.toHaveAttribute(
+      'aria-busy',
+      'true',
+      { timeout },
+    )
+  }
+
   async openOwnProfileFromHeader() {
     await this.ensureProfileCached()
+    await this.waitForAccountReady()
     const profileResponse = this.page.waitForResponse(
       (response) =>
         /\/profiles\/user\//.test(response.url())

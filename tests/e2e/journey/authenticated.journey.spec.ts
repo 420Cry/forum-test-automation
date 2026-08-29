@@ -68,6 +68,10 @@ test.describe('Authenticated journey', () => {
 
     await test.step('Follow from profile', async () => {
       await profilePage.followPeer()
+      await expect(profilePage.followButton()).toHaveText(
+        /following|đang theo dõi|social\.action\.unfollow/i,
+        { timeout: 10_000 },
+      )
     })
 
     await test.step('Peer appears on Following', async () => {
@@ -78,7 +82,7 @@ test.describe('Authenticated journey', () => {
             await followingPage.expectLoaded()
             return followingPage.cards().count()
           },
-          { timeout: 20_000 },
+          { timeout: 30_000 },
         )
         .toBeGreaterThan(0)
     })
