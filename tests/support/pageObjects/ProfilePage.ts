@@ -59,23 +59,40 @@ export class ProfilePage extends BasePage {
     const label = (await follow.textContent())?.trim() ?? ''
     if (this.isNotFollowingLabel(label)) return
 
-    const unfollowRequest = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/follows')
-        && response.request().method() === 'DELETE'
-        && response.ok(),
-      { timeout: 20_000 },
-    )
-    await follow.click()
-    await unfollowRequest.catch(() => undefined)
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const current = this.followButton()
+      const currentLabel = (await current.textContent())?.trim() ?? ''
+      if (this.isNotFollowingLabel(currentLabel)) return
 
-    await expect(this.followButton()).toHaveText(
-      /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i,
-      { timeout: 20_000 },
-    )
-    await expect(this.followButton()).not.toHaveText(
-      /following|đang theo dõi|social\.action\.unfollow/i,
-    )
+      await expect(current).toBeEnabled({ timeout: 10_000 })
+      const unfollowRequest = this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/follows')
+          && response.request().method() === 'DELETE'
+          && response.ok(),
+        { timeout: 20_000 },
+      )
+      await current.click()
+      const response = await unfollowRequest.catch(() => null)
+      if (response) {
+        await expect
+          .poll(async () => {
+            const next = (await this.followButton().textContent())?.trim() ?? ''
+            return this.isNotFollowingLabel(next)
+          }, { timeout: 10_000 })
+          .toBe(true)
+        return
+      }
+
+      await this.page.waitForTimeout(500)
+    }
+
+    await expect
+      .poll(async () => {
+        const next = (await this.followButton().textContent())?.trim() ?? ''
+        return this.isNotFollowingLabel(next)
+      }, { timeout: 20_000 })
+      .toBe(true)
   }
 
   ownPreviewBanner() {
@@ -104,8 +121,10 @@ export class ProfilePage extends BasePage {
   }
 
   private isNotFollowingLabel(label: string) {
-    return /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i.test(label)
-      && !this.isFollowingLabel(label)
+    if (this.isFollowingLabel(label)) return false
+    return /^(?:\+ ?)?follow$/i.test(label)
+      || /^theo dõi$/i.test(label)
+      || /^social\.action\.follow$/i.test(label)
   }
 
   async expectOwnProfile() {
