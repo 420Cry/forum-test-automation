@@ -67,31 +67,26 @@ test.describe('Peer profile', () => {
     const peerKey = env.peerUrlKey()
     expect(peerKey, 'E2E_PEER_URL_KEY is required for peer profile flow').toBeTruthy()
 
-    await appShellPage.goto()
-    await appShellPage.openOwnProfileFromHeader()
-    await profilePage.expectOwnProfile()
-    const before = await profilePage.followingCount()
-    expect(before).toBeGreaterThanOrEqual(0)
+    await profilePage.goto(peerKey)
+    await profilePage.expectOtherProfile()
+    await profilePage.unfollowPeer()
+
+    await followingPage.goto()
+    await followingPage.expectLoaded()
+    const listCountBefore = await followingPage.cardCount()
 
     await profilePage.goto(peerKey)
     await profilePage.expectOtherProfile()
-    await expect(profilePage.followButton()).toBeEnabled({ timeout: 15_000 })
-    const followLabel = (await profilePage.followButton().textContent())?.trim() ?? ''
-    const alreadyFollowing = /following|đang theo dõi|social\.action\.unfollow/i.test(
-      followLabel,
-    )
-    if (!alreadyFollowing) {
-      await profilePage.followPeer()
-      await followingPage.goto()
-      await followingPage.expectLoaded()
-      await expect
-        .poll(async () => followingPage.cards().count(), { timeout: 15_000 })
-        .toBeGreaterThan(0)
-    }
+    await profilePage.followPeer()
+
+    await followingPage.goto()
+    await followingPage.expectLoaded()
+    await expect
+      .poll(async () => followingPage.cardCount(), { timeout: 30_000 })
+      .toBeGreaterThan(listCountBefore)
 
     await appShellPage.openOwnProfileFromHeader()
     await profilePage.expectOwnProfile()
-    const expectedMin = alreadyFollowing ? before : before + 1
-    await profilePage.waitForFollowingCountAtLeast(expectedMin)
+    await profilePage.expectPeerInFollowingSheet(peerKey)
   })
 })

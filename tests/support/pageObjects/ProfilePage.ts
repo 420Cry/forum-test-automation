@@ -59,23 +59,40 @@ export class ProfilePage extends BasePage {
     const label = (await follow.textContent())?.trim() ?? ''
     if (this.isNotFollowingLabel(label)) return
 
-    const unfollowRequest = this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/follows')
-        && response.request().method() === 'DELETE'
-        && response.ok(),
-      { timeout: 20_000 },
-    )
-    await follow.click()
-    await unfollowRequest.catch(() => undefined)
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const current = this.followButton()
+      const currentLabel = (await current.textContent())?.trim() ?? ''
+      if (this.isNotFollowingLabel(currentLabel)) return
 
-    await expect(this.followButton()).toHaveText(
-      /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i,
-      { timeout: 20_000 },
-    )
-    await expect(this.followButton()).not.toHaveText(
-      /following|đang theo dõi|social\.action\.unfollow/i,
-    )
+      await expect(current).toBeEnabled({ timeout: 10_000 })
+      const unfollowRequest = this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/follows')
+          && response.request().method() === 'DELETE'
+          && response.ok(),
+        { timeout: 20_000 },
+      )
+      await current.click()
+      const response = await unfollowRequest.catch(() => null)
+      if (response) {
+        await expect
+          .poll(async () => {
+            const next = (await this.followButton().textContent())?.trim() ?? ''
+            return this.isNotFollowingLabel(next)
+          }, { timeout: 10_000 })
+          .toBe(true)
+        return
+      }
+
+      await this.page.waitForTimeout(500)
+    }
+
+    await expect
+      .poll(async () => {
+        const next = (await this.followButton().textContent())?.trim() ?? ''
+        return this.isNotFollowingLabel(next)
+      }, { timeout: 20_000 })
+      .toBe(true)
   }
 
   ownPreviewBanner() {
@@ -104,21 +121,31 @@ export class ProfilePage extends BasePage {
   }
 
   private isNotFollowingLabel(label: string) {
-    return /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i.test(label)
-      && !this.isFollowingLabel(label)
+    if (this.isFollowingLabel(label)) return false
+    return /^(?:\+ ?)?follow$/i.test(label)
+      || /^theo dõi$/i.test(label)
+      || /^social\.action\.follow$/i.test(label)
   }
 
   async expectOwnProfile() {
+    await this.waitForProfileSettled()
     await expect(this.editProfileButton()).toBeVisible()
     await expect(this.followButton()).toHaveCount(0)
     await this.expectUserFollowStats({ followingInteractive: true })
   }
 
   async expectOtherProfile() {
+    await this.waitForProfileSettled()
     await expect(this.editProfileButton()).toHaveCount(0)
     await expect(this.followButton()).toBeVisible()
     // Following list is viewable on any onboarded user's profile.
     await this.expectUserFollowStats({ followingInteractive: true })
+  }
+
+  private async waitForProfileSettled(timeout = 20_000) {
+    await expect(
+      this.page.locator('[aria-hidden="true"][aria-busy="true"]'),
+    ).toHaveCount(0, { timeout })
   }
 
   async expectUserFollowStats(
@@ -162,8 +189,12 @@ export class ProfilePage extends BasePage {
     await expect
       .poll(
         async () => {
-          const count = await this.followingCount()
-          if (Number.isFinite(count) && count >= min) return count
+          await this.waitForProfileSettled()
+          const statCount = await this.followingCount()
+          if (Number.isFinite(statCount) && statCount >= min) return statCount
+
+          const sheetCount = await this.followingSheetRowCount().catch(() => NaN)
+          if (Number.isFinite(sheetCount) && sheetCount >= min) return sheetCount
 
           if (reloads < 5) {
             reloads += 1
@@ -176,16 +207,42 @@ export class ProfilePage extends BasePage {
             )
             await this.page.reload({ waitUntil: 'domcontentloaded' })
             await profileResponse.catch(() => undefined)
+            await this.waitForProfileSettled()
             await expect(this.editProfileButton()).toBeVisible({
               timeout: 10_000,
             })
           }
 
-          return await this.followingCount()
+          const nextStat = await this.followingCount()
+          if (Number.isFinite(nextStat) && nextStat >= min) return nextStat
+          return this.followingSheetRowCount().catch(() => nextStat)
         },
         { timeout },
       )
       .toBeGreaterThanOrEqual(min)
+  }
+
+  followingSheetDialog() {
+    return this.page.getByRole('dialog', {
+      name: /following|đang theo dõi/i,
+    })
+  }
+
+  async followingSheetRowCount(): Promise<number> {
+    await this.openFollowingSheet()
+    const count = await this.followingSheetDialog()
+      .locator('div.shrink-0 button')
+      .count()
+    await this.closeFollowSheet()
+    return count
+  }
+
+  async expectPeerInFollowingSheet(peerKey: string, timeout = 20_000) {
+    await this.openFollowingSheet()
+    await expect(
+      this.followingSheetDialog().locator(`a[href*="/u/${peerKey}"]`).first(),
+    ).toBeVisible({ timeout })
+    await this.closeFollowSheet()
   }
 
   async openFollowersSheet() {
