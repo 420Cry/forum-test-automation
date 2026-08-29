@@ -50,7 +50,7 @@ test.describe('Smoke — auth UI', () => {
     await expect(page).toHaveURL(/\/auth\/login/)
   })
 
-  test('SMK08 Auth hub renders sign-in and create-account links', async ({
+  test('SMK08 Auth hub redirects to login with create-account link', async ({
     page,
   }) => {
     await page.goto(localePath('/auth'), { waitUntil: 'domcontentloaded' })
@@ -62,14 +62,16 @@ test.describe('Smoke — auth UI', () => {
         `App unreachable at ${page.url()}. Start the stack with: forum dev`,
       )
     }
+    await expect(page).toHaveURL(/\/auth\/login/)
     await expect(
-      page.getByRole('heading', { name: /account|tài khoản/i }),
+      page.getByRole('heading', {
+        name: /welcome back|sign in|đăng nhập|chào mừng trở lại/i,
+      }),
     ).toBeVisible()
     await expect(
-      page.getByRole('link', { name: /sign in|đăng nhập/i }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('link', { name: /create account|tạo tài khoản/i }),
+      page
+        .getByRole('link', { name: /create account|tạo tài khoản/i })
+        .first(),
     ).toBeVisible()
   })
 })
