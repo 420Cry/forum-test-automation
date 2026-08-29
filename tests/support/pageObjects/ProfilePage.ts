@@ -1,6 +1,5 @@
 import { expect } from '@playwright/test'
 import { localePath } from '../../config/env'
-import { retryUntil } from '../helpers/retry'
 import { BasePage } from './BasePage'
 
 export class ProfilePage extends BasePage {
@@ -18,23 +17,22 @@ export class ProfilePage extends BasePage {
     // Wait until follow status has loaded (button disabled while !ready).
     await expect(follow).toBeEnabled({ timeout: 15_000 })
     const label = (await follow.textContent())?.trim() ?? ''
-    if (/following|đang theo dõi/i.test(label)) return
+    if (this.isFollowingLabel(label)) return
 
-    const ok = await retryUntil(async () => {
-      const followRequest = this.page.waitForResponse(
-        (response) =>
-          response.url().includes('/follows')
-          && response.request().method() === 'POST'
-          && response.ok(),
-        { timeout: 15_000 },
-      )
-      await follow.click()
-      await followRequest.catch(() => undefined)
-      const nextLabel = (await follow.textContent())?.trim() ?? ''
-      return /following|đang theo dõi/i.test(nextLabel)
-    })
+    const followRequest = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/follows')
+        && response.request().method() === 'POST'
+        && response.ok(),
+      { timeout: 20_000 },
+    )
+    await follow.click()
+    await followRequest.catch(() => undefined)
 
-    if (!ok) await expect(follow).toHaveText(/following|đang theo dõi/i)
+    await expect(this.followButton()).toHaveText(
+      /following|đang theo dõi|social\.action\.unfollow/i,
+      { timeout: 20_000 },
+    )
   }
 
   /** Ensure we are not following this peer (needed for DM gate assertions). */
@@ -43,30 +41,25 @@ export class ProfilePage extends BasePage {
     await expect(follow).toBeVisible()
     await expect(follow).toBeEnabled({ timeout: 15_000 })
     const label = (await follow.textContent())?.trim() ?? ''
-    // Idle CTA is "+ Follow" / "Theo dõi" — already not following.
-    if (/follow|theo dõi/i.test(label) && !/following|đang theo dõi/i.test(label)) {
-      return
-    }
+    if (this.isNotFollowingLabel(label)) return
 
-    const ok = await retryUntil(async () => {
-      const unfollowRequest = this.page.waitForResponse(
-        (response) =>
-          response.url().includes('/follows')
-          && response.request().method() === 'DELETE'
-          && response.ok(),
-        { timeout: 15_000 },
-      )
-      await follow.click()
-      await unfollowRequest.catch(() => undefined)
-      const nextLabel = (await follow.textContent())?.trim() ?? ''
-      return /follow|theo dõi/i.test(nextLabel)
-        && !/following|đang theo dõi/i.test(nextLabel)
-    })
+    const unfollowRequest = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/follows')
+        && response.request().method() === 'DELETE'
+        && response.ok(),
+      { timeout: 20_000 },
+    )
+    await follow.click()
+    await unfollowRequest.catch(() => undefined)
 
-    if (!ok) {
-      await expect(follow).toHaveText(/follow|theo dõi/i)
-      await expect(follow).not.toHaveText(/following|đang theo dõi/i)
-    }
+    await expect(this.followButton()).toHaveText(
+      /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i,
+      { timeout: 20_000 },
+    )
+    await expect(this.followButton()).not.toHaveText(
+      /following|đang theo dõi|social\.action\.unfollow/i,
+    )
   }
 
   ownPreviewBanner() {
@@ -84,9 +77,19 @@ export class ProfilePage extends BasePage {
 
   followButton() {
     // Exact CTA labels only — do not match header stats like "3 following".
+    // Include raw i18n keys when locale strings are still hydrating after profile reload.
     return this.page.getByRole('button', {
-      name: /^(?:\+ ?)?(?:follow|following|unfollow|sign in to follow|theo dõi|đang theo dõi|đăng nhập để theo dõi)$/i,
+      name: /^(?:\+ ?)?(?:follow|following|unfollow|sign in to follow|theo dõi|đang theo dõi|đăng nhập để theo dõi|social\.action\.(?:follow|unfollow|sign_in_to_follow))$/i,
     })
+  }
+
+  private isFollowingLabel(label: string) {
+    return /following|đang theo dõi|social\.action\.unfollow/i.test(label)
+  }
+
+  private isNotFollowingLabel(label: string) {
+    return /^(?:\+ ?)?follow|theo dõi|social\.action\.follow$/i.test(label)
+      && !this.isFollowingLabel(label)
   }
 
   async expectOwnProfile() {
