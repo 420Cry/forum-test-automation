@@ -138,6 +138,12 @@ export class ProfilePage extends BasePage {
     return match ? Number(match[1]) : NaN
   }
 
+  async waitForFollowingCountAtLeast(min: number, timeout = 30_000) {
+    await expect
+      .poll(async () => this.followingCount(), { timeout })
+      .toBeGreaterThanOrEqual(min)
+  }
+
   async openFollowersSheet() {
     await this.followersStatButton().click()
     await expect(
