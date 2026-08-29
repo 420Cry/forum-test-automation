@@ -53,7 +53,7 @@ test.describe('Find directory', () => {
     await findPage.selectType(/people|người/i)
     await findPage.selectRole(/founder/i)
     await findPage.selectRole(/investor/i)
-    await findPage.selectType(/all|tất cả/i)
+    await findPage.selectType(/^(?:all|tất cả)$/i)
     await expect(findPage.heading()).toBeVisible()
   })
 

@@ -76,7 +76,9 @@ test.describe('Peer profile', () => {
     await profilePage.expectOtherProfile()
     await expect(profilePage.followButton()).toBeEnabled({ timeout: 15_000 })
     const followLabel = (await profilePage.followButton().textContent())?.trim() ?? ''
-    const alreadyFollowing = /following|đang theo dõi/i.test(followLabel)
+    const alreadyFollowing = /following|đang theo dõi|social\.action\.unfollow/i.test(
+      followLabel,
+    )
     if (!alreadyFollowing) {
       await profilePage.followPeer()
     }
