@@ -5,6 +5,7 @@ test.describe('Smoke — cookies', () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test('SMK09 Cookie banner is visible on login and Accept all hides it', async ({
+    page,
     loginPage,
     cookieBannerPage,
   }) => {
@@ -12,7 +13,15 @@ test.describe('Smoke — cookies', () => {
     await loginPage.expectLoaded()
     await cookieBannerPage.expectVisible()
 
+    await cookieBannerPage.waitForAppHydrated()
     await cookieBannerPage.acceptAll().click()
+    await expect
+      .poll(async () =>
+        (await page.context().cookies()).some(
+          cookie => cookie.name === 'forum_cookie_consent',
+        ),
+      )
+      .toBe(true)
     await cookieBannerPage.expectHidden()
   })
 
@@ -29,10 +38,8 @@ test.describe('Smoke — cookies', () => {
     await expect(page.getByText('forum_locale')).toBeVisible()
     await expect(page.getByText('forum_cookie_consent')).toBeVisible()
 
-    await page
-      .getByRole('button', { name: /cookie settings|cài đặt cookie/i })
-      .first()
-      .click()
+    await expect(cookieBannerPage.cookieSettingsInMain()).toBeEnabled()
+    await cookieBannerPage.cookieSettingsInMain().click()
     await expect(cookieBannerPage.preferencesDialog()).toBeVisible()
     await expect(
       cookieBannerPage.preferencesDialog().getByRole('switch', {

@@ -52,10 +52,26 @@ export class CookieBannerPage extends BasePage {
     await expect(this.region()).toHaveCount(0)
   }
 
+  cookieSettingsInMain() {
+    return this.page
+      .getByRole('main')
+      .getByRole('button', { name: /cookie settings|cài đặt cookie/i })
+  }
+
+  async waitForAppHydrated() {
+    await this.page.waitForFunction(() => {
+      const root = document.querySelector('#__nuxt')
+      return Boolean(
+        (root as HTMLElement & { __vue_app__?: unknown })?.__vue_app__,
+      )
+    })
+  }
+
   async gotoPolicy() {
     await this.page.goto(localePath('/legal/cookies'), {
       waitUntil: 'domcontentloaded',
     })
     await this.assertAppReachable()
+    await this.waitForAppHydrated()
   }
 }

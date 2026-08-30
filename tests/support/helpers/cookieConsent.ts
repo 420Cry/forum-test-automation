@@ -12,13 +12,12 @@ const rejectedConsent = {
 }
 
 export async function setRejectedCookieConsent(page: Page) {
-  const base = env.baseURL.endsWith('/') ? env.baseURL : `${env.baseURL}/`
+  const base = env.baseURL.endsWith('/') ? env.baseURL.slice(0, -1) : env.baseURL
   await page.context().addCookies([
     {
       name: COOKIE_CONSENT_COOKIE,
       value: encodeURIComponent(JSON.stringify(rejectedConsent)),
-      url: base,
-      path: '/',
+      url: `${base}/`,
       sameSite: 'Lax',
     },
   ])
