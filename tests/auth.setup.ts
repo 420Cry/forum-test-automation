@@ -6,6 +6,7 @@ import { authStoragePath } from './config/paths'
 import { apiUnavailableMessage, waitForApiReady } from './support/helpers/e2eApi'
 import { ensureE2EUser } from './support/helpers/ensureE2EUser'
 import { LoginPage } from './support/pageObjects/LoginPage'
+import { setRejectedCookieConsent } from './support/helpers/cookieConsent'
 
 const authFile = authStoragePath
 
@@ -50,6 +51,8 @@ setup('authenticate', async ({ page }) => {
         : apiUnavailableMessage(),
     )
   }
+
+  await setRejectedCookieConsent(page)
 
   fs.mkdirSync(path.dirname(authFile), { recursive: true })
   await page.context().storageState({ path: authFile })

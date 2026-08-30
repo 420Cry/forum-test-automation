@@ -2,6 +2,7 @@ import { test as base } from '@playwright/test'
 import { withResourceLock } from '../helpers/resourceLock'
 import { AppShellPage } from '../pageObjects/AppShellPage'
 import { ForgotPasswordPage, RegisterPage } from '../pageObjects/AuthPages'
+import { CookieBannerPage } from '../pageObjects/CookieBannerPage'
 import { FindPage } from '../pageObjects/FindPage'
 import { FollowingPage } from '../pageObjects/FollowingPage'
 import { LoginPage } from '../pageObjects/LoginPage'
@@ -14,6 +15,7 @@ type Pages = {
   loginPage: LoginPage
   registerPage: RegisterPage
   forgotPasswordPage: ForgotPasswordPage
+  cookieBannerPage: CookieBannerPage
   findPage: FindPage
   profilePage: ProfilePage
   followingPage: FollowingPage
@@ -36,6 +38,9 @@ type Locks = {
 export const test = base.extend<Pages & Locks>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page))
+  },
+  cookieBannerPage: async ({ page }, use) => {
+    await use(new CookieBannerPage(page))
   },
   registerPage: async ({ page }, use) => {
     await use(new RegisterPage(page))
