@@ -21,10 +21,27 @@ export class SettingsHubPage extends BasePage {
     return this.page.locator(`a[href*="/settings/password"]`)
   }
 
+  privacyHeading() {
+    return this.page.getByRole('heading', { name: /privacy|quyền riêng tư/i })
+  }
+
+  cookieSettings() {
+    return this.page.getByRole('button', {
+      name: /cookie settings|cài đặt cookie/i,
+    }).first()
+  }
+
+  cookiePolicyLink() {
+    return this.page.locator(`a[href*="/legal/cookies"]`)
+  }
+
   async expectLoaded() {
     await expect(this.heading()).toBeVisible()
     await expect(this.profileCta()).toBeVisible()
     await expect(this.passwordSectionLink()).toBeVisible()
+    await expect(this.privacyHeading()).toBeVisible()
+    await expect(this.cookieSettings()).toBeVisible()
+    await expect(this.cookiePolicyLink()).toBeVisible()
   }
 
   async openProfile() {

@@ -39,6 +39,14 @@ export class RegisterPage extends BasePage {
     await expect(this.email()).toBeVisible()
     await expect(this.password()).toBeVisible()
     await expect(this.submit()).toBeVisible()
+    await expect(
+      this.page.getByRole('link', { name: /terms|điều khoản/i }).first(),
+    ).toBeVisible()
+    await expect(
+      this.page.getByRole('link', {
+        name: /privacy policy|chính sách bảo mật/i,
+      }).first(),
+    ).toBeVisible()
   }
 }
 
