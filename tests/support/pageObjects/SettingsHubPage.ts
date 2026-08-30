@@ -7,32 +7,38 @@ export class SettingsHubPage extends BasePage {
     await this.page.goto(localePath('/settings'))
   }
 
+  private main() {
+    return this.page.getByRole('main')
+  }
+
   heading() {
-    return this.page.getByRole('heading', { name: /settings|cài đặt/i })
+    return this.main().getByRole('heading', { name: /settings|cài đặt/i })
   }
 
   profileCta() {
-    return this.page.getByRole('link', {
+    return this.main().getByRole('link', {
       name: /view and edit personal profile|xem và chỉnh sửa hồ sơ/i,
     })
   }
 
   passwordSectionLink() {
-    return this.page.locator(`a[href*="/settings/password"]`)
+    return this.main().locator(`a[href*="/settings/password"]`)
   }
 
   privacyHeading() {
-    return this.page.getByRole('heading', { name: /privacy|quyền riêng tư/i })
+    return this.main().getByRole('heading', { name: /privacy|quyền riêng tư/i })
   }
 
   cookieSettings() {
-    return this.page.getByRole('button', {
+    return this.main().getByRole('button', {
       name: /cookie settings|cài đặt cookie/i,
-    }).first()
+    })
   }
 
   cookiePolicyLink() {
-    return this.page.locator(`a[href*="/legal/cookies"]`)
+    return this.main().getByRole('link', {
+      name: /cookie policy|chính sách cookie/i,
+    })
   }
 
   async expectLoaded() {
