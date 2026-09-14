@@ -39,12 +39,19 @@ export class AppShellPage extends BasePage {
     return this.nav().getByRole('link', { name })
   }
 
-  socialHeading() {
-    return this.page.getByRole('heading', { name: /social/i })
-  }
-
-  socialFeedSoonCopy() {
-    return this.page.getByText(/feed will live here|bảng tin sẽ xuất hiện/i)
+  /**
+   * The feed area always renders exactly one of these two, independent of
+   * whether posts have loaded yet: the reader-mode banner (personal `user`
+   * accounts, which can't post) or the composer card (startup/investor).
+   */
+  socialFeedShell() {
+    const readerModeBanner = this.page.getByText(
+      /you're browsing in reader mode|bạn đang ở chế độ người đọc/i,
+    )
+    const composerCard = this.page.getByRole('button', {
+      name: /^(?:photo|ảnh)$/i,
+    })
+    return readerModeBanner.or(composerCard)
   }
 
   async goToSettingsViaNav() {
@@ -76,7 +83,7 @@ export class AppShellPage extends BasePage {
     await expect(this.profileAvatarButton()).toBeVisible()
     await expect(this.accountMenuButton()).toBeVisible()
     await expect(this.page.getByRole('link', { name: /^(?:messages|tin nhắn)$/i })).toBeVisible()
-    await expect(this.navLink(/social/i)).toBeVisible()
+    await expect(this.navLink(/^(?:social|mạng xã hội)$/i)).toBeVisible()
     await expect(this.navLink(/find|tìm/i)).toBeVisible()
     await expect(this.navLink(/following|đang theo dõi/i)).toBeVisible()
     await expect(this.navLink(/settings|cài đặt/i)).toBeVisible()
@@ -87,8 +94,8 @@ export class AppShellPage extends BasePage {
   }
 
   async expectSocialLoaded() {
-    await expect(this.socialHeading()).toBeVisible()
-    await expect(this.socialFeedSoonCopy()).toBeVisible()
+    await expect(this.navLink(/^(?:social|mạng xã hội)$/i)).toBeVisible()
+    await expect(this.socialFeedShell()).toBeVisible()
   }
 
   async waitForAccountReady(timeout = 20_000) {

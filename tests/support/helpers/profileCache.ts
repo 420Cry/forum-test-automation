@@ -7,9 +7,11 @@ const profileButton = (page: Page) =>
   })
 
 async function assertSocialShell(page: Page) {
-  await expect(page.getByRole('heading', { name: /social/i })).toBeVisible({
-    timeout: 15_000,
-  })
+  // No literal "Social" heading since the feed replaced the placeholder — the
+  // nav link is the stable, locale-aware landmark that's always rendered.
+  await expect(
+    page.getByRole('link', { name: /^(?:social|mạng xã hội)$/i }),
+  ).toBeVisible({ timeout: 15_000 })
   await expect(profileButton(page)).toBeVisible()
 }
 
